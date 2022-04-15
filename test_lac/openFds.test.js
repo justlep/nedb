@@ -9,19 +9,15 @@ let i,
     fds;
 
 function multipleOpen(filename, N, callback) {
-    async.whilst(function () {
-            return i < N;
-        }
-        , function (cb) {
-            fs.open(filename, 'r', function (err, fd) {
-                i += 1;
-                if (fd) {
-                    fds.push(fd);
-                }
-                return cb(err);
-            });
-        }
-        , callback);
+    async.whilst(() => i < N, function (cb) {
+        fs.open(filename, 'r', function (err, fd) {
+            i += 1;
+            if (fd) {
+                fds.push(fd);
+            }
+            return cb(err);
+        });
+    }, callback);
 }
 
 async.waterfall([
@@ -38,8 +34,8 @@ async.waterfall([
             });
             return cb();
         });
-    }
-    , function (cb) {
+    },
+    function (cb) {
         i = 0;
         fds = [];
         multipleOpen('./test_lac/openFdsTestFile2', N, function (err) {
@@ -51,9 +47,9 @@ async.waterfall([
             });
             return cb();
         });
-    }
+    },
     // Then actually test NeDB persistence
-    , function () {
+    function () {
         db.remove({}, {multi: true}, function (err) {
             if (err) {
                 console.log(err);
@@ -66,8 +62,8 @@ async.waterfall([
                 i = 0;
                 async.whilst(function () {
                         return i < 2 * N + 1;
-                    }
-                    , function (cb) {
+                    },
+                    function (cb) {
                         db.persistence.persistCachedDatabase(function (err) {
                             if (err) {
                                 return cb(err);
@@ -75,8 +71,8 @@ async.waterfall([
                             i += 1;
                             return cb();
                         });
-                    }
-                    , function (err) {
+                    },
+                    function (err) {
                         if (err) {
                             console.log('Got unexpected error during one peresistence operation: ' + err);
                         }
