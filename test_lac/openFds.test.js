@@ -1,9 +1,11 @@
-let fs = require('fs'),
-    async = require('async'),
-    Nedb = require('../lib/datastore'),
-    db = new Nedb({filename: './workspace/openfds.db', autoload: true}),
-    N = 64,   // Half the allowed file descriptors,
-    i, 
+import fs from 'fs';
+import async from 'async';
+import {Nedb} from '../lib/datastore.js';
+    
+const N = 64;   // Half the allowed file descriptors,
+const db = new Nedb({filename: './workspace/openfds.db', autoload: true});
+
+let i,
     fds;
 
 function multipleOpen(filename, N, callback) {
@@ -35,7 +37,7 @@ async.waterfall([
                 fs.closeSync(fd);
             });
             return cb();
-        })
+        });
     }
     , function (cb) {
         i = 0;
@@ -48,7 +50,7 @@ async.waterfall([
                 fs.closeSync(fd);
             });
             return cb();
-        })
+        });
     }
     // Then actually test NeDB persistence
     , function () {

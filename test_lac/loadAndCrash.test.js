@@ -1,7 +1,9 @@
 /**
  * Load and modify part of fs to ensure writeFile will crash after writing 5000 bytes
  */
-let fs = require('fs');
+import * as fs from 'fs';
+import {_overrideWriteFile} from '../lib/storage.js';
+import {Nedb} from '../lib/datastore.js';
 
 function rethrow() {
     // Only enable in debug mode. A backtrace uses ~1000 bytes of heap space and
@@ -84,7 +86,7 @@ function writeAll(fd, isUserFd, buffer, offset, length, position, callback_) {
     });
 }
 
-fs.writeFile = function (path, data, options, callback_) {
+_overrideWriteFile(function (path, data, options, callback_) {
     let callback = maybeCallback(arguments[arguments.length - 1]);
 
     if (!options || typeof options === 'function') {
@@ -115,17 +117,16 @@ fs.writeFile = function (path, data, options, callback_) {
     });
 
     function writeFd(fd, isUserFd) {
-        let buffer = (data instanceof Buffer) ? data : new Buffer('' + data, options.encoding || 'utf8');
+        let buffer = (data instanceof Buffer) ? data : Buffer.from('' + data);
         let position = /a/.test(flag) ? null : 0;
 
         writeAll(fd, isUserFd, buffer, 0, buffer.length, position, callback);
     }
-};
+});
 
 
 // End of fs modification
-var Nedb = require('../lib/datastore.js')
-    , db = new Nedb({filename: 'workspace/lac.db'})
-;
+
+const db = new Nedb({filename: 'workspace/lac.db'});
 
 db.loadDatabase();

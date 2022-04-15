@@ -1,11 +1,5 @@
-var Index = require('../lib/indexes')
-  , customUtils = require('../lib/customUtils')
-  , should = require('chai').should()
-  , assert = require('chai').assert
-  , _ = require('underscore')
-  , async = require('async')
-  , model = require('../lib/model')
-  ;
+import {Index} from '../lib/indexes.js';
+import {assert} from './chaiHelper.js';
 
 describe('Indexes', function () {
 

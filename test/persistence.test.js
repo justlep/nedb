@@ -1,18 +1,15 @@
-var should = require('chai').should()
-  , assert = require('chai').assert
-  , testDb = 'workspace/test.db'
-  , fs = require('fs')
-  , path = require('path')
-  , _ = require('underscore')
-  , async = require('async')
-  , model = require('../lib/model')
-  , customUtils = require('../lib/customUtils')
-  , Datastore = require('../lib/datastore')
-  , Persistence = require('../lib/persistence')
-  , storage = require('../lib/storage')
-  , child_process = require('child_process')
-;
+import fs from 'fs';
+import path from 'path';
+import _ from 'underscore';
+import async from 'async';
+import {Datastore} from '../lib/datastore.js';
+import {Persistence} from '../lib/persistence.js';
+import {assert} from './chaiHelper.js';
+import * as model from '../lib/model.js';
+import {ensureDatafileIntegrity, ensureFileDoesntExist} from '../lib/storage.js';
+import {fork, execFile} from 'child_process';
 
+const testDb = 'workspace/test.db';
 
 describe('Persistence', function () {
   var d;
@@ -315,7 +312,7 @@ describe('Persistence', function () {
 
     it("Declaring only one hook will throw an exception to prevent data loss", function (done) {
       var hookTestFilename = 'workspace/hookTest.db'
-      storage.ensureFileDoesntExist(hookTestFilename, function () {
+      ensureFileDoesntExist(hookTestFilename, function () {
         fs.writeFileSync(hookTestFilename, "Some content", "utf8");
 
         (function () {
@@ -342,7 +339,7 @@ describe('Persistence', function () {
 
     it("Declaring two hooks that are not reverse of one another will cause an exception to prevent data loss", function (done) {
       var hookTestFilename = 'workspace/hookTest.db'
-      storage.ensureFileDoesntExist(hookTestFilename, function () {
+      ensureFileDoesntExist(hookTestFilename, function () {
         fs.writeFileSync(hookTestFilename, "Some content", "utf8");
 
         (function () {
@@ -361,7 +358,7 @@ describe('Persistence', function () {
 
     it("A serialization hook can be used to transform data before writing new state to disk", function (done) {
       var hookTestFilename = 'workspace/hookTest.db'
-      storage.ensureFileDoesntExist(hookTestFilename, function () {
+      ensureFileDoesntExist(hookTestFilename, function () {
         var d = new Datastore({ filename: hookTestFilename, autoload: true
           , afterSerialization: as
           , beforeDeserialization: bd
@@ -440,7 +437,7 @@ describe('Persistence', function () {
 
     it("Use serialization hook when persisting cached database or compacting", function (done) {
       var hookTestFilename = 'workspace/hookTest.db'
-      storage.ensureFileDoesntExist(hookTestFilename, function () {
+      ensureFileDoesntExist(hookTestFilename, function () {
         var d = new Datastore({ filename: hookTestFilename, autoload: true
           , afterSerialization: as
           , beforeDeserialization: bd
@@ -502,7 +499,7 @@ describe('Persistence', function () {
 
     it("Deserialization hook is correctly used when loading data", function (done) {
       var hookTestFilename = 'workspace/hookTest.db'
-      storage.ensureFileDoesntExist(hookTestFilename, function () {
+      ensureFileDoesntExist(hookTestFilename, function () {
         var d = new Datastore({ filename: hookTestFilename, autoload: true
           , afterSerialization: as
           , beforeDeserialization: bd
@@ -568,7 +565,7 @@ describe('Persistence', function () {
       fs.existsSync('workspace/it.db').should.equal(false);
       fs.existsSync('workspace/it.db~').should.equal(false);
 
-      storage.ensureDatafileIntegrity(p.filename, function (err) {
+      ensureDatafileIntegrity(p.filename, function (err) {
         assert.isNull(err);
 
         fs.existsSync('workspace/it.db').should.equal(true);
@@ -591,7 +588,7 @@ describe('Persistence', function () {
       fs.existsSync('workspace/it.db').should.equal(true);
       fs.existsSync('workspace/it.db~').should.equal(false);
 
-      storage.ensureDatafileIntegrity(p.filename, function (err) {
+      ensureDatafileIntegrity(p.filename, function (err) {
         assert.isNull(err);
 
         fs.existsSync('workspace/it.db').should.equal(true);
@@ -614,7 +611,7 @@ describe('Persistence', function () {
       fs.existsSync('workspace/it.db').should.equal(false);
       fs.existsSync('workspace/it.db~').should.equal(true);
 
-      storage.ensureDatafileIntegrity(p.filename, function (err) {
+      ensureDatafileIntegrity(p.filename, function (err) {
         assert.isNull(err);
 
         fs.existsSync('workspace/it.db').should.equal(true);
@@ -639,7 +636,7 @@ describe('Persistence', function () {
       fs.existsSync('workspace/it.db').should.equal(true);
       fs.existsSync('workspace/it.db~').should.equal(true);
 
-      storage.ensureDatafileIntegrity(theDb.persistence.filename, function (err) {
+      ensureDatafileIntegrity(theDb.persistence.filename, function (err) {
         assert.isNull(err);
 
         fs.existsSync('workspace/it.db').should.equal(true);
@@ -762,8 +759,8 @@ describe('Persistence', function () {
       var dbFile = 'workspace/test2.db', theDb, theDb2, doc1, doc2;
 
       async.waterfall([
-          async.apply(storage.ensureFileDoesntExist, dbFile)
-        , async.apply(storage.ensureFileDoesntExist, dbFile + '~')
+          async.apply(ensureFileDoesntExist, dbFile)
+        , async.apply(ensureFileDoesntExist, dbFile + '~')
         , function (cb) {
           theDb = new Datastore({ filename: dbFile });
           theDb.loadDatabase(cb);
@@ -851,7 +848,7 @@ describe('Persistence', function () {
       var datafileLength = fs.readFileSync('workspace/lac.db', 'utf8').length;
 
       // Loading it in a separate process that we will crash before finishing the loadDatabase
-      child_process.fork('test_lac/loadAndCrash.test').on('exit', function (code) {
+      fork('test_lac/loadAndCrash.test').on('exit', function (code) {
         code.should.equal(1);   // See test_lac/loadAndCrash.test.js
 
         fs.existsSync('workspace/lac.db').should.equal(true);
@@ -884,7 +881,7 @@ describe('Persistence', function () {
     // Not run on Windows as there is no clean way to set maximum file descriptors. Not an issue as the code itself is tested.
     it("Cannot cause EMFILE errors by opening too many file descriptors", function (done) {
       if (process.platform === 'win32' || process.platform === 'win64') { return done(); }
-      child_process.execFile('test_lac/openFdsLaunch.sh', function (err, stdout, stderr) {
+      execFile('test_lac/openFdsLaunch.sh', function (err, stdout, stderr) {
         if (err) { return done(err); }
 
         // The subprocess will not output anything to stdout unless part of the test fails
@@ -902,7 +899,7 @@ describe('Persistence', function () {
   describe('ensureFileDoesntExist', function () {
 
     it('Doesnt do anything if file already doesnt exist', function (done) {
-      storage.ensureFileDoesntExist('workspace/nonexisting', function (err) {
+      ensureFileDoesntExist('workspace/nonexisting', function (err) {
         assert.isNull(err);
         fs.existsSync('workspace/nonexisting').should.equal(false);
         done();
@@ -913,7 +910,7 @@ describe('Persistence', function () {
       fs.writeFileSync('workspace/existing', 'hello world', 'utf8');
       fs.existsSync('workspace/existing').should.equal(true);
 
-      storage.ensureFileDoesntExist('workspace/existing', function (err) {
+      ensureFileDoesntExist('workspace/existing', function (err) {
         assert.isNull(err);
         fs.existsSync('workspace/existing').should.equal(false);
         done();

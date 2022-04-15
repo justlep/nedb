@@ -1,14 +1,9 @@
-var model = require('../lib/model')
-  , should = require('chai').should()
-  , assert = require('chai').assert
-  , expect = require('chai').expect
-  , _ = require('underscore')
-  , async = require('async')
-  , util = require('util')
-  , Datastore = require('../lib/datastore')
-  , fs = require('fs')
-  ;
-
+import fs from 'fs';
+import _ from 'underscore';
+import {Datastore} from '../lib/datastore.js';
+import {assert, expect} from './chaiHelper.js';
+import * as model from '../lib/model.js';
+import {isDate} from '../lib/customUtils.js';
 
 describe('Model', function () {
 
@@ -84,7 +79,7 @@ describe('Model', function () {
       c = model.deserialize(b);
       b.indexOf('\n').should.equal(-1);
       b.should.equal('{"test":{"$$date":' + d.getTime() + '}}');
-      util.isDate(c.test).should.equal(true);
+      isDate(c.test).should.equal(true);
       c.test.getTime().should.equal(d.getTime());
     });
 
@@ -382,9 +377,9 @@ describe('Model', function () {
       });
 
       it("Doesn't replace a falsy field by an object when recursively following dot notation", function () {
-        var obj = { nested: false }
-          , updateQuery = { $set: { "nested.now": 'it is' } }
-          , modified = model.modify(obj, updateQuery);
+        var obj = { nested: false },
+            updateQuery = { $set: { "nested.now": 'it is' } },
+            modified = model.modify(obj, updateQuery);
 
         assert.deepEqual(modified, { nested: false });   // Object not modified as the nested field doesn't exist
       });

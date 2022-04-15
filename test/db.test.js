@@ -1,16 +1,15 @@
-var should = require('chai').should()
-  , assert = require('chai').assert
-  , testDb = 'workspace/test.db'
-  , fs = require('fs')
-  , path = require('path')
-  , _ = require('underscore')
-  , async = require('async')
-  , model = require('../lib/model')
-  , Datastore = require('../lib/datastore')
-  , Persistence = require('../lib/persistence')
-  , reloadTimeUpperBound = 60;   // In ms, an upper bound for the reload time used to check createdAt and updatedAt
-  ;
+import fs from 'fs';
+import path from 'path';
+import _ from 'underscore';
+import async from 'async';
+import {Datastore} from '../lib/datastore.js';
+import {Persistence} from '../lib/persistence.js';
+import * as model from '../lib/model.js';
+import {assert} from './chaiHelper.js';
 
+const reloadTimeUpperBound = 60;   // In ms, an upper bound for the reload time used to check createdAt and updatedAt
+
+const testDb = 'workspace/test.db';
 
 describe('Database', function () {
   var d;

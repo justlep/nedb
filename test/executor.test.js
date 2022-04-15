@@ -1,15 +1,11 @@
-var should = require('chai').should()
-  , assert = require('chai').assert
-  , testDb = 'workspace/test.db'
-  , fs = require('fs')
-  , path = require('path')
-  , _ = require('underscore')
-  , async = require('async')
-  , model = require('../lib/model')
-  , Datastore = require('../lib/datastore')
-  , Persistence = require('../lib/persistence')
-  ;
+import fs from 'fs';
+import path from 'path';
+import async from 'async';
+import {Datastore} from '../lib/datastore.js';
+import {Persistence} from '../lib/persistence.js';
+import {assert} from './chaiHelper.js';
 
+const testDb = 'workspace/test.db';
 
 // Test that even if a callback throws an exception, the next DB operations will still be executed
 // We prevent Mocha from catching the exception we throw on purpose by remembering all current handlers, remove them and register them back after test ends
