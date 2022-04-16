@@ -5,7 +5,7 @@ import async from 'async';
 import {Datastore} from '../lib/datastore.js';
 import {Persistence} from '../lib/persistence.js';
 import * as model from '../lib/model.js';
-import {assert} from './chaiHelper.js';
+import {assert, expect} from './chaiHelper.js';
 
 const reloadTimeUpperBound = 60;   // In ms, an upper bound for the reload time used to check createdAt and updatedAt
 
@@ -39,18 +39,9 @@ describe('Database', function () {
     ], done);
   });
 
-  it('Constructor compatibility with v0.6-', function () {
-    var dbef = new Datastore('somefile');
-    dbef.filename.should.equal('somefile');
-    dbef.inMemoryOnly.should.equal(false);
-
-    var dbef = new Datastore('');
-    assert.isNull(dbef.filename);
-    dbef.inMemoryOnly.should.equal(true);
-
-    var dbef = new Datastore();
-    assert.isNull(dbef.filename);
-    dbef.inMemoryOnly.should.equal(true);
+  it('No more constructor compatibility with v0.6-', function () {
+    expect(() => void new Datastore('somefile')).to.throw();
+    expect(() => void new Datastore('')).to.throw();
   });
 
   describe('Autoloading', function () {
