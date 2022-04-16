@@ -3,7 +3,7 @@
  */
 import * as fs from 'fs';
 import {_overrideWriteFile} from '../lib/storage.js';
-import {Nedb} from '../lib/datastore.js';
+import {Datastore} from '../lib/datastore.js';
 
 function rethrow() {
     // Only enable in debug mode. A backtrace uses ~1000 bytes of heap space and
@@ -127,6 +127,6 @@ _overrideWriteFile(function (path, data, options, callback_) {
 
 // End of fs modification
 
-const db = new Nedb({filename: 'workspace/lac.db'});
+const db = new Datastore({filename: 'workspace/lac.db'});
 
 db.loadDatabase();

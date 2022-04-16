@@ -1,9 +1,9 @@
 import fs from 'fs';
 import async from 'async';
-import {Nedb} from '../lib/datastore.js';
+import {Datastore} from '../lib/datastore.js';
     
 const N = 64;   // Half the allowed file descriptors,
-const db = new Nedb({filename: './workspace/openfds.db', autoload: true});
+const db = new Datastore({filename: './workspace/openfds.db', autoload: true});
 
 let i,
     fds;
