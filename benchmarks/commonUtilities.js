@@ -2,11 +2,10 @@
  * Functions that are used in several benchmark tests
  */
 
-var customUtils = require('../lib/customUtils')
-  , fs = require('fs')
+var fs = require('fs')
   , path = require('path')
   , Datastore = require('../lib/datastore')
-  , Persistence = require('../lib/persistence')
+  , {ensureDirectoryExists} = require('../lib/storage')
   , executeAsap   // process.nextTick or setImmediate depending on your Node version
   ;
 
@@ -51,7 +50,7 @@ module.exports.getConfiguration = function (benchDb) {
  * Ensure the workspace exists and the db datafile is empty
  */
 module.exports.prepareDb = function (filename, cb) {
-  Persistence.ensureDirectoryExists(path.dirname(filename), function () {
+  ensureDirectoryExists(path.dirname(filename), function () {
     fs.exists(filename, function (exists) {
       if (exists) {
         fs.unlink(filename, cb);

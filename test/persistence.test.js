@@ -6,7 +6,7 @@ import {Datastore} from '../lib/datastore.js';
 import {Persistence} from '../lib/persistence.js';
 import {assert} from './chaiHelper.js';
 import * as model from '../lib/model.js';
-import {ensureDatafileIntegrity, ensureFileDoesntExist} from '../lib/storage.js';
+import {ensureDatafileIntegrity, ensureDirectoryExists, ensureFileDoesntExist} from '../lib/storage.js';
 import {fork, execFile} from 'child_process';
 
 const testDb = 'workspace/test.db';
@@ -21,7 +21,7 @@ describe('Persistence', function () {
 
     async.waterfall([
       function (cb) {
-        Persistence.ensureDirectoryExists(path.dirname(testDb), function () {
+        ensureDirectoryExists(path.dirname(testDb), function () {
           fs.exists(testDb, function (exists) {
             if (exists) {
               fs.unlink(testDb, cb);

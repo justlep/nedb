@@ -3,9 +3,9 @@ import path from 'path';
 import _ from 'underscore';
 import async from 'async';
 import {Datastore} from '../lib/datastore.js';
-import {Persistence} from '../lib/persistence.js';
 import * as model from '../lib/model.js';
 import {assert, expect} from './chaiHelper.js';
+import {ensureDirectoryExists} from '../lib/storage.js';
 
 const reloadTimeUpperBound = 60;   // In ms, an upper bound for the reload time used to check createdAt and updatedAt
 
@@ -21,7 +21,7 @@ describe('Database', function () {
 
     async.waterfall([
       function (cb) {
-        Persistence.ensureDirectoryExists(path.dirname(testDb), function () {
+        ensureDirectoryExists(path.dirname(testDb), function () {
           fs.exists(testDb, function (exists) {
             if (exists) {
               fs.unlink(testDb, cb);

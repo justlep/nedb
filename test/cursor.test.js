@@ -3,9 +3,9 @@ import path from 'path';
 import _ from 'underscore';
 import async from 'async';
 import {Datastore} from '../lib/datastore.js';
-import {Persistence} from '../lib/persistence.js';
 import {Cursor} from '../lib/cursor.js';
 import {assert} from './chaiHelper.js';
+import {ensureDirectoryExists} from '../lib/storage.js';
 
 const testDb = 'workspace/test.db';
 
@@ -19,7 +19,7 @@ describe('Cursor', function () {
 
     async.waterfall([
       function (cb) {
-        Persistence.ensureDirectoryExists(path.dirname(testDb), function () {
+        ensureDirectoryExists(path.dirname(testDb), function () {
           fs.exists(testDb, function (exists) {
             if (exists) {
               fs.unlink(testDb, cb);
