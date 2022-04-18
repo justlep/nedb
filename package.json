@@ -24,7 +24,7 @@
     "url": "git@github.com:louischatriot/nedb.git"
   },
   "dependencies": {
-    "async": "0.2.10",
+    "async": "^3.2.3",
     "binary-search-tree": "0.2.5",
     "underscore": "^1.13.2"
   },
