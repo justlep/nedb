@@ -4,7 +4,7 @@ import {Datastore} from '../lib/datastore.js';
 import {assert, expect} from './chaiHelper.js';
 import * as model from '../lib/model.js';
 import {isDate} from '../lib/customUtils.js';
-import {checkObject, cloneDeep, deserialize, matchQuery, serialize} from '../lib/model.js';
+import {checkObject, cloneDeep, deserialize, matchQuery, modifyDoc, serialize} from '../lib/model.js';
 
 describe('Model', function () {
 
@@ -287,7 +287,7 @@ describe('Model', function () {
         , t
         ;
 
-      t = model.modify(obj, updateQuery);
+      t = modifyDoc(obj, updateQuery);
       t.replace.should.equal('done');
       t.bloup.length.should.equal(2);
       t.bloup[0].should.equal(1);
@@ -303,11 +303,11 @@ describe('Model', function () {
         ;
 
       expect(function () {
-        model.modify(obj, updateQuery);
+        modifyDoc(obj, updateQuery);
       }).to.throw("You cannot change a document's _id");
 
       updateQuery._id = 'keepit';
-      model.modify(obj, updateQuery);   // No error thrown
+      modifyDoc(obj, updateQuery);   // No error thrown
     });
 
     it('Throw an error if trying to use modify in a mixed copy+modify way', function () {
@@ -315,7 +315,7 @@ describe('Model', function () {
         , updateQuery = { replace: 'me', $modify: 'metoo' };
 
       expect(function () {
-        model.modify(obj, updateQuery);
+        modifyDoc(obj, updateQuery);
       }).to.throw("You cannot mix modifiers and normal fields");
     });
 
@@ -324,7 +324,7 @@ describe('Model', function () {
         , updateQuery = { $set: { it: 'exists' }, $modify: 'not this one' };
 
       expect(function () {
-        model.modify(obj, updateQuery);
+        modifyDoc(obj, updateQuery);
       }).to.throw(/^Unknown modifier .modify/);
     });
 
@@ -333,7 +333,7 @@ describe('Model', function () {
         , updateQuery = { $set: 'this exists' };
 
       expect(function () {
-        model.modify(obj, updateQuery);
+        modifyDoc(obj, updateQuery);
       }).to.throw(/Modifier .set's argument must be an object/);
     });
 
@@ -341,7 +341,7 @@ describe('Model', function () {
       it('Can change already set fields without modfifying the underlying object', function () {
         var obj = { some: 'thing', yup: 'yes', nay: 'noes' }
           , updateQuery = { $set: { some: 'changed', nay: 'yes indeed' } }
-          , modified = model.modify(obj, updateQuery);
+          , modified = modifyDoc(obj, updateQuery);
 
         Object.keys(modified).length.should.equal(3);
         modified.some.should.equal('changed');
@@ -357,7 +357,7 @@ describe('Model', function () {
       it('Creates fields to set if they dont exist yet', function () {
         var obj = { yup: 'yes' }
           , updateQuery = { $set: { some: 'changed', nay: 'yes indeed' } }
-          , modified = model.modify(obj, updateQuery);
+          , modified = modifyDoc(obj, updateQuery);
 
         Object.keys(modified).length.should.equal(3);
         modified.some.should.equal('changed');
@@ -368,7 +368,7 @@ describe('Model', function () {
       it('Can set sub-fields and create them if necessary', function () {
         var obj = { yup: { subfield: 'bloup' } }
           , updateQuery = { $set: { "yup.subfield": 'changed', "yup.yop": 'yes indeed', "totally.doesnt.exist": 'now it does' } }
-          , modified = model.modify(obj, updateQuery);
+          , modified = modifyDoc(obj, updateQuery);
 
         _.isEqual(modified, { yup: { subfield: 'changed', yop: 'yes indeed' }, totally: { doesnt: { exist: 'now it does' } } }).should.equal(true);
       });
@@ -376,7 +376,7 @@ describe('Model', function () {
       it("Doesn't replace a falsy field by an object when recursively following dot notation", function () {
         var obj = { nested: false },
             updateQuery = { $set: { "nested.now": 'it is' } },
-            modified = model.modify(obj, updateQuery);
+            modified = modifyDoc(obj, updateQuery);
 
         assert.deepEqual(modified, { nested: false });   // Object not modified as the nested field doesn't exist
       });
@@ -389,17 +389,17 @@ describe('Model', function () {
 
         obj = { yup: 'yes', other: 'also' }
         updateQuery = { $unset: { yup: true } }
-        modified = model.modify(obj, updateQuery);
+        modified = modifyDoc(obj, updateQuery);
         assert.deepEqual(modified, { other: 'also' });
 
         obj = { yup: 'yes', other: 'also' }
         updateQuery = { $unset: { nope: true } }
-        modified = model.modify(obj, updateQuery);
+        modified = modifyDoc(obj, updateQuery);
         assert.deepEqual(modified, obj);
 
         obj = { yup: 'yes', other: 'also' }
         updateQuery = { $unset: { nope: true, other: true } }
-        modified = model.modify(obj, updateQuery);
+        modified = modifyDoc(obj, updateQuery);
         assert.deepEqual(modified, { yup: 'yes' });
       });
 
@@ -408,28 +408,28 @@ describe('Model', function () {
 
         obj = { yup: 'yes', nested: { a: 'also', b: 'yeah' } }
         updateQuery = { $unset: { nested: true } }
-        modified = model.modify(obj, updateQuery);
+        modified = modifyDoc(obj, updateQuery);
         assert.deepEqual(modified, { yup: 'yes' });
 
         obj = { yup: 'yes', nested: { a: 'also', b: 'yeah' } }
         updateQuery = { $unset: { 'nested.a': true } }
-        modified = model.modify(obj, updateQuery);
+        modified = modifyDoc(obj, updateQuery);
         assert.deepEqual(modified, { yup: 'yes', nested: { b: 'yeah' } });
 
         obj = { yup: 'yes', nested: { a: 'also', b: 'yeah' } }
         updateQuery = { $unset: { 'nested.a': true, 'nested.b': true } }
-        modified = model.modify(obj, updateQuery);
+        modified = modifyDoc(obj, updateQuery);
         assert.deepEqual(modified, { yup: 'yes', nested: {} });
       });
 
       it("When unsetting nested fields, should not create an empty parent to nested field", function () {
-        var obj = model.modify({ argh: true }, { $unset: { 'bad.worse': true } });
+        var obj = modifyDoc({ argh: true }, { $unset: { 'bad.worse': true } });
         assert.deepEqual(obj, { argh: true });
 
-        obj = model.modify({ argh: true, bad: { worse: 'oh' } }, { $unset: { 'bad.worse': true } });
+        obj = modifyDoc({ argh: true, bad: { worse: 'oh' } }, { $unset: { 'bad.worse': true } });
         assert.deepEqual(obj, { argh: true, bad: {} });
 
-        obj = model.modify({ argh: true, bad: {} }, { $unset: { 'bad.worse': true } });
+        obj = modifyDoc({ argh: true, bad: {} }, { $unset: { 'bad.worse': true } });
         assert.deepEqual(obj, { argh: true, bad: {} });
       });
 
@@ -440,13 +440,13 @@ describe('Model', function () {
         (function () {
           var obj = { some: 'thing', yup: 'yes', nay: 2 }
             , updateQuery = { $inc: { nay: 'notanumber' } }
-            , modified = model.modify(obj, updateQuery);
+            , modified = modifyDoc(obj, updateQuery);
         }).should.throw();
 
         (function () {
           var obj = { some: 'thing', yup: 'yes', nay: 'nope' }
             , updateQuery = { $inc: { nay: 1 } }
-            , modified = model.modify(obj, updateQuery);
+            , modified = modifyDoc(obj, updateQuery);
         }).should.throw();
       });
 
@@ -454,11 +454,11 @@ describe('Model', function () {
         var obj = { some: 'thing', nay: 40 }
           , modified;
 
-        modified = model.modify(obj, { $inc: { nay: 2 } });
+        modified = modifyDoc(obj, { $inc: { nay: 2 } });
         _.isEqual(modified, { some: 'thing', nay: 42 }).should.equal(true);
 
         // Incidentally, this tests that obj was not modified
-        modified = model.modify(obj, { $inc: { inexistent: -6 } });
+        modified = modifyDoc(obj, { $inc: { inexistent: -6 } });
         _.isEqual(modified, { some: 'thing', nay: 40, inexistent: -6 }).should.equal(true);
       });
 
@@ -466,7 +466,7 @@ describe('Model', function () {
         var obj = { some: 'thing', nay: { nope: 40 } }
           , modified;
 
-        modified = model.modify(obj, { $inc: { "nay.nope": -2, "blip.blop": 123 } });
+        modified = modifyDoc(obj, { $inc: { "nay.nope": -2, "blip.blop": 123 } });
         _.isEqual(modified, { some: 'thing', nay: { nope: 38 }, blip: { blop: 123 } }).should.equal(true);
       });
     });   // End of '$inc modifier'
@@ -477,7 +477,7 @@ describe('Model', function () {
         var obj = { arr: ['hello'] }
           , modified;
 
-        modified = model.modify(obj, { $push: { arr: 'world' } });
+        modified = modifyDoc(obj, { $push: { arr: 'world' } });
         assert.deepEqual(modified, { arr: ['hello', 'world'] });
       });
 
@@ -485,7 +485,7 @@ describe('Model', function () {
         var obj = {}
           , modified;
 
-        modified = model.modify(obj, { $push: { arr: 'world' } });
+        modified = modifyDoc(obj, { $push: { arr: 'world' } });
         assert.deepEqual(modified, { arr: ['world'] });
       });
 
@@ -493,11 +493,11 @@ describe('Model', function () {
         var obj = { arr: { nested: ['hello'] } }
           , modified;
 
-        modified = model.modify(obj, { $push: { "arr.nested": 'world' } });
+        modified = modifyDoc(obj, { $push: { "arr.nested": 'world' } });
         assert.deepEqual(modified, { arr: { nested: ['hello', 'world'] } });
 
         obj = { arr: { a: 2 }};
-        modified = model.modify(obj, { $push: { "arr.nested": 'world' } });
+        modified = modifyDoc(obj, { $push: { "arr.nested": 'world' } });
         assert.deepEqual(modified, { arr: { a: 2, nested: ['world'] } });
       });
 
@@ -506,12 +506,12 @@ describe('Model', function () {
           , modified;
 
         (function () {
-          modified = model.modify(obj, { $push: { arr: 'world' } });
+          modified = modifyDoc(obj, { $push: { arr: 'world' } });
         }).should.throw();
 
         obj = { arr: { nested: 45 } };
         (function () {
-          modified = model.modify(obj, { $push: { "arr.nested": 'world' } });
+          modified = modifyDoc(obj, { $push: { "arr.nested": 'world' } });
         }).should.throw();
       });
 
@@ -519,15 +519,15 @@ describe('Model', function () {
         var obj = { arr: ['hello'] }
           , modified;
 
-        modified = model.modify(obj, { $push: { arr: { $each: ['world', 'earth', 'everything'] } } });
+        modified = modifyDoc(obj, { $push: { arr: { $each: ['world', 'earth', 'everything'] } } });
         assert.deepEqual(modified, { arr: ['hello', 'world', 'earth', 'everything'] });
 
         (function () {
-          modified = model.modify(obj, { $push: { arr: { $each: 45 } } });
+          modified = modifyDoc(obj, { $push: { arr: { $each: 45 } } });
         }).should.throw();
 
         (function () {
-          modified = model.modify(obj, { $push: { arr: { $each: ['world'], unauthorized: true } } });
+          modified = modifyDoc(obj, { $push: { arr: { $each: ['world'], unauthorized: true } } });
         }).should.throw();
       });
 
@@ -535,40 +535,40 @@ describe('Model', function () {
         var obj = { arr: ['hello'] }
           , modified;
 
-        modified = model.modify(obj, { $push: { arr: { $each: ['world', 'earth', 'everything'], $slice: 1 } } });
+        modified = modifyDoc(obj, { $push: { arr: { $each: ['world', 'earth', 'everything'], $slice: 1 } } });
         assert.deepEqual(modified, { arr: ['hello'] });
 
-        modified = model.modify(obj, { $push: { arr: { $each: ['world', 'earth', 'everything'], $slice: -1 } } });
+        modified = modifyDoc(obj, { $push: { arr: { $each: ['world', 'earth', 'everything'], $slice: -1 } } });
         assert.deepEqual(modified, { arr: ['everything'] });
 
-        modified = model.modify(obj, { $push: { arr: { $each: ['world', 'earth', 'everything'], $slice: 0 } } });
+        modified = modifyDoc(obj, { $push: { arr: { $each: ['world', 'earth', 'everything'], $slice: 0 } } });
         assert.deepEqual(modified, { arr: [] });
 
-        modified = model.modify(obj, { $push: { arr: { $each: ['world', 'earth', 'everything'], $slice: 2 } } });
+        modified = modifyDoc(obj, { $push: { arr: { $each: ['world', 'earth', 'everything'], $slice: 2 } } });
         assert.deepEqual(modified, { arr: ['hello', 'world'] });
 
-        modified = model.modify(obj, { $push: { arr: { $each: ['world', 'earth', 'everything'], $slice: -2 } } });
+        modified = modifyDoc(obj, { $push: { arr: { $each: ['world', 'earth', 'everything'], $slice: -2 } } });
         assert.deepEqual(modified, { arr: ['earth', 'everything'] });
 
-        modified = model.modify(obj, { $push: { arr: { $each: ['world', 'earth', 'everything'], $slice: -20 } } });
+        modified = modifyDoc(obj, { $push: { arr: { $each: ['world', 'earth', 'everything'], $slice: -20 } } });
         assert.deepEqual(modified, { arr: ['hello', 'world', 'earth', 'everything'] });
 
-        modified = model.modify(obj, { $push: { arr: { $each: ['world', 'earth', 'everything'], $slice: 20 } } });
+        modified = modifyDoc(obj, { $push: { arr: { $each: ['world', 'earth', 'everything'], $slice: 20 } } });
         assert.deepEqual(modified, { arr: ['hello', 'world', 'earth', 'everything'] });
 
-        modified = model.modify(obj, { $push: { arr: { $each: [], $slice: 1 } } });
+        modified = modifyDoc(obj, { $push: { arr: { $each: [], $slice: 1 } } });
         assert.deepEqual(modified, { arr: ['hello'] });
 
         // $each not specified, but $slice is
-        modified = model.modify(obj, { $push: { arr: { $slice: 1 } } });
+        modified = modifyDoc(obj, { $push: { arr: { $slice: 1 } } });
         assert.deepEqual(modified, { arr: ['hello'] });
 
         (function () {
-          modified = model.modify(obj, { $push: { arr: { $slice: 1, unauthorized: true } } });
+          modified = modifyDoc(obj, { $push: { arr: { $slice: 1, unauthorized: true } } });
         }).should.throw();
 
         (function () {
-          modified = model.modify(obj, { $push: { arr: { $each: [], unauthorized: true } } });
+          modified = modifyDoc(obj, { $push: { arr: { $each: [], unauthorized: true } } });
         }).should.throw();
       });
 
@@ -580,11 +580,11 @@ describe('Model', function () {
         var obj = { arr: ['hello'] }
           , modified;
 
-        modified = model.modify(obj, { $addToSet: { arr: 'world' } });
+        modified = modifyDoc(obj, { $addToSet: { arr: 'world' } });
         assert.deepEqual(modified, { arr: ['hello', 'world'] });
 
         obj = { arr: ['hello'] };
-        modified = model.modify(obj, { $addToSet: { arr: 'hello' } });
+        modified = modifyDoc(obj, { $addToSet: { arr: 'hello' } });
         assert.deepEqual(modified, { arr: ['hello'] });
       });
 
@@ -592,7 +592,7 @@ describe('Model', function () {
         var obj = { arr: [] }
           , modified;
 
-        modified = model.modify(obj, { $addToSet: { arr: 'world' } });
+        modified = modifyDoc(obj, { $addToSet: { arr: 'world' } });
         assert.deepEqual(modified, { arr: ['world'] });
       });
 
@@ -601,7 +601,7 @@ describe('Model', function () {
           , modified;
 
         (function () {
-          modified = model.modify(obj, { $addToSet: { arr: 'world' } });
+          modified = modifyDoc(obj, { $addToSet: { arr: 'world' } });
         }).should.throw();
       });
 
@@ -609,11 +609,11 @@ describe('Model', function () {
         var obj = { arr: [ { b: 2 } ] }
           , modified;
 
-        modified = model.modify(obj, { $addToSet: { arr: { b: 3 } } });
+        modified = modifyDoc(obj, { $addToSet: { arr: { b: 3 } } });
         assert.deepEqual(modified, { arr: [{ b: 2 }, { b: 3 }] });
 
         obj = { arr: [ { b: 2 } ] }
-        modified = model.modify(obj, { $addToSet: { arr: { b: 2 } } });
+        modified = modifyDoc(obj, { $addToSet: { arr: { b: 2 } } });
         assert.deepEqual(modified, { arr: [{ b: 2 }] });
       });
 
@@ -621,15 +621,15 @@ describe('Model', function () {
         var obj = { arr: ['hello'] }
           , modified;
 
-        modified = model.modify(obj, { $addToSet: { arr: { $each: ['world', 'earth', 'hello', 'earth'] } } });
+        modified = modifyDoc(obj, { $addToSet: { arr: { $each: ['world', 'earth', 'hello', 'earth'] } } });
         assert.deepEqual(modified, { arr: ['hello', 'world', 'earth'] });
 
         (function () {
-          modified = model.modify(obj, { $addToSet: { arr: { $each: 45 } } });
+          modified = modifyDoc(obj, { $addToSet: { arr: { $each: 45 } } });
         }).should.throw();
 
         (function () {
-          modified = model.modify(obj, { $addToSet: { arr: { $each: ['world'], unauthorized: true } } });
+          modified = modifyDoc(obj, { $addToSet: { arr: { $each: ['world'], unauthorized: true } } });
         }).should.throw();
       });
 
@@ -642,17 +642,17 @@ describe('Model', function () {
           , modified;
 
         (function () {
-          modified = model.modify(obj, { $pop: { arr: 1 } });
+          modified = modifyDoc(obj, { $pop: { arr: 1 } });
         }).should.throw();
 
         obj = { bloup: 'nope' };
         (function () {
-          modified = model.modify(obj, { $pop: { arr: 1 } });
+          modified = modifyDoc(obj, { $pop: { arr: 1 } });
         }).should.throw();
 
         obj = { arr: [1, 4, 8] };
         (function () {
-          modified = model.modify(obj, { $pop: { arr: true } });
+          modified = modifyDoc(obj, { $pop: { arr: true } });
         }).should.throw();
       });
 
@@ -661,18 +661,18 @@ describe('Model', function () {
           , modified;
 
         obj = { arr: [1, 4, 8] };
-        modified = model.modify(obj, { $pop: { arr: 1 } });
+        modified = modifyDoc(obj, { $pop: { arr: 1 } });
         assert.deepEqual(modified, { arr: [1, 4] });
 
         obj = { arr: [1, 4, 8] };
-        modified = model.modify(obj, { $pop: { arr: -1 } });
+        modified = modifyDoc(obj, { $pop: { arr: -1 } });
         assert.deepEqual(modified, { arr: [4, 8] });
 
         // Empty arrays are not changed
         obj = { arr: [] };
-        modified = model.modify(obj, { $pop: { arr: 1 } });
+        modified = modifyDoc(obj, { $pop: { arr: 1 } });
         assert.deepEqual(modified, { arr: [] });
-        modified = model.modify(obj, { $pop: { arr: -1 } });
+        modified = modifyDoc(obj, { $pop: { arr: -1 } });
         assert.deepEqual(modified, { arr: [] });
       });
 
@@ -684,11 +684,11 @@ describe('Model', function () {
         var obj = { arr: ['hello', 'world'] }
           , modified;
 
-        modified = model.modify(obj, { $pull: { arr: 'world' } });
+        modified = modifyDoc(obj, { $pull: { arr: 'world' } });
         assert.deepEqual(modified, { arr: ['hello'] });
 
         obj = { arr: ['hello'] };
-        modified = model.modify(obj, { $pull: { arr: 'world' } });
+        modified = modifyDoc(obj, { $pull: { arr: 'world' } });
         assert.deepEqual(modified, { arr: ['hello'] });
       });
 
@@ -696,7 +696,7 @@ describe('Model', function () {
         var obj = { arr: ['hello', 'world', 'hello', 'world'] }
           , modified;
 
-        modified = model.modify(obj, { $pull: { arr: 'world' } });
+        modified = modifyDoc(obj, { $pull: { arr: 'world' } });
         assert.deepEqual(modified, { arr: ['hello', 'hello'] });
       });
 
@@ -705,7 +705,7 @@ describe('Model', function () {
           , modified;
 
         (function () {
-          modified = model.modify(obj, { $pull: { arr: 'world' } });
+          modified = modifyDoc(obj, { $pull: { arr: 'world' } });
         }).should.throw();
       });
 
@@ -713,11 +713,11 @@ describe('Model', function () {
         var obj = { arr: [{ b: 2 }, { b: 3 }] }
           , modified;
 
-        modified = model.modify(obj, { $pull: { arr: { b: 3 } } });
+        modified = modifyDoc(obj, { $pull: { arr: { b: 3 } } });
         assert.deepEqual(modified, { arr: [ { b: 2 } ] });
 
         obj = { arr: [ { b: 2 } ] }
-        modified = model.modify(obj, { $pull: { arr: { b: 3 } } });
+        modified = modifyDoc(obj, { $pull: { arr: { b: 3 } } });
         assert.deepEqual(modified, { arr: [{ b: 2 }] });
       });
 
@@ -726,11 +726,11 @@ describe('Model', function () {
           , modified
         ;
 
-        modified = model.modify(obj, { $pull: { arr: { $gte: 5 } } });
+        modified = modifyDoc(obj, { $pull: { arr: { $gte: 5 } } });
         assert.deepEqual(modified, { arr: [4, 2], other: 'yup' });
 
         obj = { arr: [{ b: 4 }, { b: 7 }, { b: 1 }], other: 'yeah' };
-        modified = model.modify(obj, { $pull: { arr: { b: { $gte: 5} } } });
+        modified = modifyDoc(obj, { $pull: { arr: { b: { $gte: 5} } } });
         assert.deepEqual(modified, { arr: [{ b: 4 }, { b: 1 }], other: 'yeah' });
       });
 
@@ -740,7 +740,7 @@ describe('Model', function () {
       it('Will set the field to the updated value if value is greater than current one, without modifying the original object', function () {
         var obj = { some:'thing', number: 10 }
             , updateQuery = { $max: { number:12 } }
-            , modified = model.modify(obj, updateQuery);
+            , modified = modifyDoc(obj, updateQuery);
 
        expect(modified).to.deep.equal({ some: 'thing', number: 12 });
        expect(obj).to.deep.equal({ some: 'thing', number: 10 });
@@ -749,7 +749,7 @@ describe('Model', function () {
       it('Will not update the field if new value is smaller than current one', function () {
         var obj = { some:'thing', number: 10 }
             , updateQuery = { $max: { number: 9 } }
-            , modified = model.modify(obj, updateQuery);
+            , modified = modifyDoc(obj, updateQuery);
 
        expect(modified).to.deep.equal({ some:'thing', number:10 });
       });
@@ -757,7 +757,7 @@ describe('Model', function () {
       it('Will create the field if it does not exist', function () {
         var obj = { some: 'thing' }
             , updateQuery = { $max: { number: 10 } }
-            , modified = model.modify(obj, updateQuery);
+            , modified = modifyDoc(obj, updateQuery);
 
        expect(modified).to.deep.equal({ some: 'thing', number: 10 });
       });
@@ -765,7 +765,7 @@ describe('Model', function () {
       it('Works on embedded documents', function () {
         var obj = { some: 'thing', somethingElse: { number:10 } }
             , updateQuery = { $max: { 'somethingElse.number': 12 } }
-            , modified = model.modify(obj,updateQuery);
+            , modified = modifyDoc(obj,updateQuery);
 
        expect(modified).to.deep.equal({ some: 'thing', somethingElse: { number:12 } });
       });
@@ -775,7 +775,7 @@ describe('Model', function () {
       it('Will set the field to the updated value if value is smaller than current one, without modifying the original object', function () {
         var obj = { some:'thing', number: 10 }
             , updateQuery = { $min: { number: 8 } }
-            , modified = model.modify(obj, updateQuery);
+            , modified = modifyDoc(obj, updateQuery);
 
        expect(modified).to.deep.equal({ some: 'thing', number: 8 });
        expect(obj).to.deep.equal({ some: 'thing', number: 10 });
@@ -784,7 +784,7 @@ describe('Model', function () {
       it('Will not update the field if new value is greater than current one', function () {
         var obj = { some: 'thing', number: 10 }
             , updateQuery = { $min: { number: 12 } }
-            , modified = model.modify(obj, updateQuery);
+            , modified = modifyDoc(obj, updateQuery);
 
        expect(modified).to.deep.equal({ some: 'thing', number: 10 });
       });
@@ -792,7 +792,7 @@ describe('Model', function () {
       it('Will create the field if it does not exist', function () {
         var obj = { some: 'thing' }
             , updateQuery = { $min: { number: 10 } }
-            , modified = model.modify(obj, updateQuery);
+            , modified = modifyDoc(obj, updateQuery);
 
        expect(modified).to.deep.equal({ some: 'thing', number: 10 });
       });
@@ -800,7 +800,7 @@ describe('Model', function () {
       it('Works on embedded documents', function () {
         var obj = { some: 'thing', somethingElse: { number: 10 } }
             , updateQuery = { $min: { 'somethingElse.number': 8 } }
-            , modified = model.modify(obj, updateQuery);
+            , modified = modifyDoc(obj, updateQuery);
 
        expect(modified).to.deep.equal({ some: 'thing', somethingElse: { number: 8 } } );
       });
