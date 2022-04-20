@@ -4,10 +4,10 @@ import _ from 'underscore';
 import async from 'async';
 import {Datastore} from '../lib/datastore.js';
 import {Persistence} from '../lib/persistence.js';
-import {assert} from './chaiHelper.js';
-import * as model from '../lib/model.js';
+import {assert, expect} from './chaiHelper.js';
 import {ensureDatafileIntegrity, ensureDirectoryExists, ensureFileDoesntExist} from '../lib/storage.js';
 import {fork, execFile} from 'child_process';
+import {deserialize, serialize} from '../lib/model.js';
 
 const testDb = 'workspace/test.db';
 
@@ -41,95 +41,95 @@ describe('Persistence', function () {
 
   it('Every line represents a document', function () {
     var now = new Date()
-      , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
-    model.serialize({ _id: "2", hello: 'world' }) + '\n' +
-    model.serialize({ _id: "3", nested: { today: now } })
+      , rawData = serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+    serialize({ _id: "2", hello: 'world' }) + '\n' +
+    serialize({ _id: "3", nested: { today: now } })
       , treatedData = d.persistence.treatRawData(rawData).data
     ;
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
     treatedData.length.should.equal(3);
-    _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
-    _.isEqual(treatedData[1], { _id: "2", hello: 'world' }).should.equal(true);
-    _.isEqual(treatedData[2], { _id: "3", nested: { today: now } }).should.equal(true);
+    expect(treatedData[0]).to.deep.equal({ _id: "1", a: 2, ages: [1, 5, 12] });
+    expect(treatedData[1]).to.deep.equal({ _id: "2", hello: 'world' });
+    expect(treatedData[2]).to.deep.equal({ _id: "3", nested: { today: now } });
   });
 
   it('Badly formatted lines have no impact on the treated data', function () {
     var now = new Date()
-      , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+      , rawData = serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
     'garbage\n' +
-    model.serialize({ _id: "3", nested: { today: now } })
+    serialize({ _id: "3", nested: { today: now } })
       , treatedData = d.persistence.treatRawData(rawData).data
     ;
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
     treatedData.length.should.equal(2);
-    _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
-    _.isEqual(treatedData[1], { _id: "3", nested: { today: now } }).should.equal(true);
+    expect(treatedData[0]).to.deep.equal({ _id: "1", a: 2, ages: [1, 5, 12] });
+    expect(treatedData[1]).to.deep.equal({ _id: "3", nested: { today: now } });
   });
 
   it('Well formatted lines that have no _id are not included in the data', function () {
     var now = new Date()
-      , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
-    model.serialize({ _id: "2", hello: 'world' }) + '\n' +
-    model.serialize({ nested: { today: now } })
+      , rawData = serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+    serialize({ _id: "2", hello: 'world' }) + '\n' +
+    serialize({ nested: { today: now } })
       , treatedData = d.persistence.treatRawData(rawData).data
     ;
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
     treatedData.length.should.equal(2);
-    _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
-    _.isEqual(treatedData[1], { _id: "2", hello: 'world' }).should.equal(true);
+    expect(treatedData[0]).to.deep.equal({ _id: "1", a: 2, ages: [1, 5, 12] });
+    expect(treatedData[1]).to.deep.equal({ _id: "2", hello: 'world' });
   });
 
   it('If two lines concern the same doc (= same _id), the last one is the good version', function () {
     var now = new Date()
-      , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
-    model.serialize({ _id: "2", hello: 'world' }) + '\n' +
-    model.serialize({ _id: "1", nested: { today: now } })
+      , rawData = serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+    serialize({ _id: "2", hello: 'world' }) + '\n' +
+    serialize({ _id: "1", nested: { today: now } })
       , treatedData = d.persistence.treatRawData(rawData).data
     ;
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
     treatedData.length.should.equal(2);
-    _.isEqual(treatedData[0], { _id: "1", nested: { today: now } }).should.equal(true);
-    _.isEqual(treatedData[1], { _id: "2", hello: 'world' }).should.equal(true);
+    expect(treatedData[0]).to.deep.equal({ _id: "1", nested: { today: now } });
+    expect(treatedData[1]).to.deep.equal({ _id: "2", hello: 'world' });
   });
 
   it('If a doc contains $$deleted: true, that means we need to remove it from the data', function () {
     var now = new Date()
-      , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
-    model.serialize({ _id: "2", hello: 'world' }) + '\n' +
-    model.serialize({ _id: "1", $$deleted: true }) + '\n' +
-    model.serialize({ _id: "3", today: now })
+      , rawData = serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+    serialize({ _id: "2", hello: 'world' }) + '\n' +
+    serialize({ _id: "1", $$deleted: true }) + '\n' +
+    serialize({ _id: "3", today: now })
       , treatedData = d.persistence.treatRawData(rawData).data
     ;
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
     treatedData.length.should.equal(2);
-    _.isEqual(treatedData[0], { _id: "2", hello: 'world' }).should.equal(true);
-    _.isEqual(treatedData[1], { _id: "3", today: now }).should.equal(true);
+    expect(treatedData[0]).to.deep.equal({ _id: "2", hello: 'world' });
+    expect(treatedData[1]).to.deep.equal({ _id: "3", today: now });
   });
 
   it('If a doc contains $$deleted: true, no error is thrown if the doc wasnt in the list before', function () {
     var now = new Date()
-      , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
-    model.serialize({ _id: "2", $$deleted: true }) + '\n' +
-    model.serialize({ _id: "3", today: now })
+      , rawData = serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+    serialize({ _id: "2", $$deleted: true }) + '\n' +
+    serialize({ _id: "3", today: now })
       , treatedData = d.persistence.treatRawData(rawData).data
     ;
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
     treatedData.length.should.equal(2);
-    _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
-    _.isEqual(treatedData[1], { _id: "3", today: now }).should.equal(true);
+    expect(treatedData[0]).to.deep.equal({ _id: "1", a: 2, ages: [1, 5, 12] });
+    expect(treatedData[1]).to.deep.equal({ _id: "3", today: now });
   });
 
   it('If a doc contains $$indexCreated, no error is thrown during treatRawData and we can get the index options', function () {
     var now = new Date()
-      , rawData = model.serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
-    model.serialize({ $$indexCreated: { fieldName: "test", unique: true } }) + '\n' +
-    model.serialize({ _id: "3", today: now })
+      , rawData = serialize({ _id: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+    serialize({ $$indexCreated: { fieldName: "test", unique: true } }) + '\n' +
+    serialize({ _id: "3", today: now })
       , treatedData = d.persistence.treatRawData(rawData).data
       , indexes = d.persistence.treatRawData(rawData).indexes
     ;
@@ -139,8 +139,8 @@ describe('Persistence', function () {
 
     treatedData.sort(function (a, b) { return a._id - b._id; });
     treatedData.length.should.equal(2);
-    _.isEqual(treatedData[0], { _id: "1", a: 2, ages: [1, 5, 12] }).should.equal(true);
-    _.isEqual(treatedData[1], { _id: "3", today: now }).should.equal(true);
+    expect(treatedData[0]).to.deep.equal({ _id: "1", a: 2, ages: [1, 5, 12] });
+    expect(treatedData[1]).to.deep.equal( { _id: "3", today: now });
   });
 
   it('Compact database on load', function (done) {
@@ -376,7 +376,7 @@ describe('Persistence', function () {
           data[0].substring(0, 7).should.equal('before_');
           data[0].substring(data[0].length - 6).should.equal('_after');
 
-          doc0 = model.deserialize(doc0);
+          doc0 = deserialize(doc0);
           Object.keys(doc0).length.should.equal(2);
           doc0.hello.should.equal('world');
 
@@ -394,11 +394,11 @@ describe('Persistence', function () {
             data[1].substring(0, 7).should.equal('before_');
             data[1].substring(data[1].length - 6).should.equal('_after');
 
-            doc0 = model.deserialize(doc0);
+            doc0 = deserialize(doc0);
             Object.keys(doc0).length.should.equal(2);
             doc0.hello.should.equal('world');
 
-            doc1 = model.deserialize(doc1);
+            doc1 = deserialize(doc1);
             Object.keys(doc1).length.should.equal(2);
             doc1.p.should.equal('Mars');
 
@@ -417,15 +417,15 @@ describe('Persistence', function () {
               data[1].substring(0, 7).should.equal('before_');
               data[1].substring(data[1].length - 6).should.equal('_after');
 
-              doc0 = model.deserialize(doc0);
+              doc0 = deserialize(doc0);
               Object.keys(doc0).length.should.equal(2);
               doc0.hello.should.equal('world');
 
-              doc1 = model.deserialize(doc1);
+              doc1 = deserialize(doc1);
               Object.keys(doc1).length.should.equal(2);
               doc1.p.should.equal('Mars');
 
-              idx = model.deserialize(idx);
+              idx = deserialize(idx);
               assert.deepEqual(idx, { '$$indexCreated': { fieldName: 'idefix' } });
 
               done();
@@ -457,18 +457,18 @@ describe('Persistence', function () {
 
               data.length.should.equal(4);
 
-              doc0 = model.deserialize(doc0);
+              doc0 = deserialize(doc0);
               Object.keys(doc0).length.should.equal(2);
               doc0.hello.should.equal('world');
 
-              doc1 = model.deserialize(doc1);
+              doc1 = deserialize(doc1);
               Object.keys(doc1).length.should.equal(2);
               doc1.hello.should.equal('earth');
 
               doc0._id.should.equal(doc1._id);
               _id = doc0._id;
 
-              idx = model.deserialize(idx);
+              idx = deserialize(idx);
               assert.deepEqual(idx, { '$$indexCreated': { fieldName: 'idefix' } });
 
               d.persistence.persistCachedDatabase(function () {
@@ -480,13 +480,13 @@ describe('Persistence', function () {
 
                 data.length.should.equal(3);
 
-                doc0 = model.deserialize(doc0);
+                doc0 = deserialize(doc0);
                 Object.keys(doc0).length.should.equal(2);
                 doc0.hello.should.equal('earth');
 
                 doc0._id.should.equal(_id);
 
-                idx = model.deserialize(idx);
+                idx = deserialize(idx);
                 assert.deepEqual(idx, { '$$indexCreated': { fieldName: 'idefix', unique: false, sparse: false } });
 
                 done();
@@ -841,7 +841,7 @@ describe('Persistence', function () {
 
       // Creating a db file with 150k records (a bit long to load)
       for (i = 0; i < N; i += 1) {
-        toWrite += model.serialize({ _id: 'anid_' + i, hello: 'world' }) + '\n';
+        toWrite += serialize({ _id: 'anid_' + i, hello: 'world' }) + '\n';
       }
       fs.writeFileSync('workspace/lac.db', toWrite, 'utf8');
 

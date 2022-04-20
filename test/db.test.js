@@ -3,9 +3,9 @@ import path from 'path';
 import _ from 'underscore';
 import async from 'async';
 import {Datastore} from '../lib/datastore.js';
-import * as model from '../lib/model.js';
 import {assert, expect} from './chaiHelper.js';
 import {ensureDirectoryExists} from '../lib/storage.js';
+import {deserialize, serialize} from '../lib/model.js';
 
 const reloadTimeUpperBound = 60;   // In ms, an upper bound for the reload time used to check createdAt and updatedAt
 
@@ -16,8 +16,8 @@ describe('Database', function () {
 
   beforeEach(function (done) {
     d = new Datastore({ filename: testDb });
-    d.filename.should.equal(testDb);
-    d.inMemoryOnly.should.equal(false);
+     expect(d.filename).to.equal(testDb);
+     expect(d.inMemoryOnly).to.equal(false);
 
     async.waterfall([
       function (cb) {
@@ -32,7 +32,7 @@ describe('Database', function () {
     , function (cb) {
         d.loadDatabase(function (err) {
           assert.isNull(err);
-          d.getAllData().length.should.equal(0);
+           expect(d.getAllData().length).to.equal(0);
           return cb();
         });
       }
@@ -47,7 +47,7 @@ describe('Database', function () {
   describe('Autoloading', function () {
 
     it('Can autoload a database and query it right away', function (done) {
-      var fileStr = model.serialize({ _id: '1', a: 5, planet: 'Earth' }) + '\n' + model.serialize({ _id: '2', a: 5, planet: 'Mars' }) + '\n'
+      var fileStr = serialize({ _id: '1', a: 5, planet: 'Earth' }) + '\n' + serialize({ _id: '2', a: 5, planet: 'Mars' }) + '\n'
         , autoDb = 'workspace/auto.db'
         , db
         ;
@@ -57,13 +57,13 @@ describe('Database', function () {
 
       db.find({}, function (err, docs) {
         assert.isNull(err);
-        docs.length.should.equal(2);
+         expect(docs.length).to.equal(2);
         done();
       });
     });
 
     it('Throws if autoload fails', function (done) {
-      var fileStr = model.serialize({ _id: '1', a: 5, planet: 'Earth' }) + '\n' + model.serialize({ _id: '2', a: 5, planet: 'Mars' }) + '\n' + '{"$$indexCreated":{"fieldName":"a","unique":true}}'
+      var fileStr = serialize({ _id: '1', a: 5, planet: 'Earth' }) + '\n' + serialize({ _id: '2', a: 5, planet: 'Mars' }) + '\n' + '{"$$indexCreated":{"fieldName":"a","unique":true}}'
         , autoDb = 'workspace/auto.db'
         , db
         ;
@@ -72,7 +72,7 @@ describe('Database', function () {
 
       // Check the loadDatabase generated an error
       function onload (err) {
-        err.errorType.should.equal('uniqueViolated');
+         expect(err.errorType).to.equal('uniqueViolated');
         done();
       }
 
@@ -89,24 +89,24 @@ describe('Database', function () {
 
     it('Able to insert a document in the database, setting an _id if none provided, and retrieve it even after a reload', function (done) {
       d.find({}, function (err, docs) {
-        docs.length.should.equal(0);
+         expect(docs.length).to.equal(0);
 
         d.insert({ somedata: 'ok' }, function (err) {
           // The data was correctly updated
           d.find({}, function (err, docs) {
             assert.isNull(err);
-            docs.length.should.equal(1);
-            Object.keys(docs[0]).length.should.equal(2);
-            docs[0].somedata.should.equal('ok');
+             expect(docs.length).to.equal(1);
+             expect(Object.keys(docs[0]).length).to.equal(2);
+             expect(docs[0].somedata).to.equal('ok');
             assert.isDefined(docs[0]._id);
 
             // After a reload the data has been correctly persisted
             d.loadDatabase(function (err) {
               d.find({}, function (err, docs) {
                 assert.isNull(err);
-                docs.length.should.equal(1);
-                Object.keys(docs[0]).length.should.equal(2);
-                docs[0].somedata.should.equal('ok');
+                 expect(docs.length).to.equal(1);
+                 expect(Object.keys(docs[0]).length).to.equal(2);
+                 expect(docs[0].somedata).to.equal('ok');
                 assert.isDefined(docs[0]._id);
 
                 done();
@@ -119,13 +119,13 @@ describe('Database', function () {
 
     it('Can insert multiple documents in the database', function (done) {
       d.find({}, function (err, docs) {
-        docs.length.should.equal(0);
+         expect(docs.length).to.equal(0);
 
         d.insert({ somedata: 'ok' }, function (err) {
           d.insert({ somedata: 'another' }, function (err) {
             d.insert({ somedata: 'again' }, function (err) {
               d.find({}, function (err, docs) {
-                docs.length.should.equal(3);
+                 expect(docs.length).to.equal(3);
                 _.pluck(docs, 'somedata').should.contain('ok');
                 _.pluck(docs, 'somedata').should.contain('another');
                 _.pluck(docs, 'somedata').should.contain('again');
@@ -145,13 +145,13 @@ describe('Database', function () {
       d.insert(obj, function (err) {
         d.findOne({}, function (err, res) {
           assert.isNull(err);
-          res.a.length.should.equal(3);
-          res.a[0].should.equal('ee');
-          res.a[1].should.equal('ff');
-          res.a[2].should.equal(42);
-          res.date.getTime().should.equal(da.getTime());
-          res.subobj.a.should.equal('b');
-          res.subobj.b.should.equal('c');
+           expect(res.a.length).to.equal(3);
+           expect(res.a[0]).to.equal('ee');
+           expect(res.a[1]).to.equal('ff');
+           expect(res.a[2]).to.equal(42);
+           expect(res.date.getTime()).to.equal(da.getTime());
+           expect(res.subobj.a).to.equal('b');
+           expect(res.subobj.b).to.equal('c');
 
           done();
         });
@@ -161,19 +161,19 @@ describe('Database', function () {
     it('If an object returned from the DB is modified and refetched, the original value should be found', function (done) {
       d.insert({ a: 'something' }, function () {
         d.findOne({}, function (err, doc) {
-          doc.a.should.equal('something');
+           expect(doc.a).to.equal('something');
           doc.a = 'another thing';
-          doc.a.should.equal('another thing');
+           expect(doc.a).to.equal('another thing');
 
           // Re-fetching with findOne should yield the persisted value
           d.findOne({}, function (err, doc) {
-            doc.a.should.equal('something');
+             expect(doc.a).to.equal('something');
             doc.a = 'another thing';
-            doc.a.should.equal('another thing');
+             expect(doc.a).to.equal('another thing');
 
             // Re-fetching with find should yield the persisted value
             d.find({}, function (err, docs) {
-              docs[0].a.should.equal('something');
+               expect(docs[0].a).to.equal('something');
 
               done();
             });
@@ -192,12 +192,12 @@ describe('Database', function () {
     it('If an _id is already given when we insert a document, use that instead of generating a random one', function (done) {
       d.insert({ _id: 'test', stuff: true }, function (err, newDoc) {
         if (err) { return done(err); }
-
-        newDoc.stuff.should.equal(true);
-        newDoc._id.should.equal('test');
+ 
+        expect(newDoc.stuff).to.equal(true);
+         expect(newDoc._id).to.equal('test');
 
         d.insert({ _id: 'test', otherstuff: 42 }, function (err) {
-          err.errorType.should.equal('uniqueViolated');
+           expect(err.errorType).to.equal('uniqueViolated');
 
           done();
         });
@@ -209,7 +209,7 @@ describe('Database', function () {
         newDoc.hello = 'changed';
 
         d.findOne({ a: 2 }, function (err, doc) {
-          doc.hello.should.equal('world');
+           expect(doc.hello).to.equal('world');
           done();
         });
       });
@@ -221,18 +221,18 @@ describe('Database', function () {
       d.insert(docs, function (err) {
         d.find({}, function (err, docs) {
           var data;
-
-          docs.length.should.equal(2);
-          _.find(docs, function (doc) { return doc.a === 5; }).b.should.equal('hello');
-          _.find(docs, function (doc) { return doc.a === 42; }).b.should.equal('world');
+ 
+          expect(docs.length).to.equal(2);
+           expect(_.find(docs, function (doc) { return doc.a === 5; }).b).to.equal('hello');
+           expect(_.find(docs, function (doc) { return doc.a === 42; }).b).to.equal('world');
 
           // The data has been persisted correctly
           data = _.filter(fs.readFileSync(testDb, 'utf8').split('\n'), function (line) { return line.length > 0; });
-          data.length.should.equal(2);
-          model.deserialize(data[0]).a.should.equal(5);
-          model.deserialize(data[0]).b.should.equal('hello');
-          model.deserialize(data[1]).a.should.equal(42);
-          model.deserialize(data[1]).b.should.equal('world');
+           expect(data.length).to.equal(2);
+           expect(deserialize(data[0]).a).to.equal(5);
+           expect(deserialize(data[0]).b).to.equal('hello');
+           expect(deserialize(data[1]).a).to.equal(42);
+           expect(deserialize(data[1]).b).to.equal('world');
 
           done();
         });
@@ -244,14 +244,14 @@ describe('Database', function () {
 
       d.ensureIndex({ fieldName: 'a', unique: true }, function () {   // Important to specify callback here to make sure filesystem synced
         d.insert(docs, function (err) {
-          err.errorType.should.equal('uniqueViolated');
+           expect(err.errorType).to.equal('uniqueViolated');
 
           d.find({}, function (err, docs) {
             // Datafile only contains index definition
-            var datafileContents = model.deserialize(fs.readFileSync(testDb, 'utf8'));
+            var datafileContents = deserialize(fs.readFileSync(testDb, 'utf8'));
             assert.deepEqual(datafileContents, { $$indexCreated: { fieldName: 'a', unique: true } });
-
-            docs.length.should.equal(0);
+ 
+            expect(docs.length).to.equal(0);
 
             done();
           });
@@ -264,33 +264,33 @@ describe('Database', function () {
       d = new Datastore({ filename: testDb, timestampData: true, autoload: true });
       d.find({}, function (err, docs) {
         assert.isNull(err);
-        docs.length.should.equal(0);
+         expect(docs.length).to.equal(0);
 
         d.insert(newDoc, function (err, insertedDoc) {
           // No side effect on given input
           assert.deepEqual(newDoc, { hello: 'world' });
           // Insert doc has two new fields, _id and createdAt
-          insertedDoc.hello.should.equal('world');
+           expect(insertedDoc.hello).to.equal('world');
           assert.isDefined(insertedDoc.createdAt);
           assert.isDefined(insertedDoc.updatedAt);
-          insertedDoc.createdAt.should.equal(insertedDoc.updatedAt);
+           expect(insertedDoc.createdAt).to.equal(insertedDoc.updatedAt);
           assert.isDefined(insertedDoc._id);
-          Object.keys(insertedDoc).length.should.equal(4);
+           expect(Object.keys(insertedDoc).length).to.equal(4);
           assert.isBelow(Math.abs(insertedDoc.createdAt.getTime() - beginning), reloadTimeUpperBound);   // No more than 30ms should have elapsed (worst case, if there is a flush)
 
           // Modifying results of insert doesn't change the cache
           insertedDoc.bloup = "another";
-          Object.keys(insertedDoc).length.should.equal(5);
+           expect(Object.keys(insertedDoc).length).to.equal(5);
 
           d.find({}, function (err, docs) {
-            docs.length.should.equal(1);
+             expect(docs.length).to.equal(1);
             assert.deepEqual(newDoc, { hello: 'world' });
             assert.deepEqual({ hello: 'world', _id: insertedDoc._id, createdAt: insertedDoc.createdAt, updatedAt: insertedDoc.updatedAt }, docs[0]);
 
             // All data correctly persisted on disk
             d.loadDatabase(function () {
               d.find({}, function (err, docs) {
-                docs.length.should.equal(1);
+                 expect(docs.length).to.equal(1);
                 assert.deepEqual(newDoc, { hello: 'world' });
                 assert.deepEqual({ hello: 'world', _id: insertedDoc._id, createdAt: insertedDoc.createdAt, updatedAt: insertedDoc.updatedAt }, docs[0]);
 
@@ -304,12 +304,12 @@ describe('Database', function () {
 
     it("If timestampData option not set, don't create a createdAt and a updatedAt field", function (done) {
       d.insert({ hello: 'world' }, function (err, insertedDoc) {
-        Object.keys(insertedDoc).length.should.equal(2);
+         expect(Object.keys(insertedDoc).length).to.equal(2);
         assert.isUndefined(insertedDoc.createdAt);
         assert.isUndefined(insertedDoc.updatedAt);
 
         d.find({}, function (err, docs) {
-          docs.length.should.equal(1);
+           expect(docs.length).to.equal(1);
           assert.deepEqual(docs[0], insertedDoc);
 
           done();
@@ -321,8 +321,8 @@ describe('Database', function () {
       var newDoc = { hello: 'world', createdAt: new Date(234) }, beginning = Date.now();
       d = new Datastore({ filename: testDb, timestampData: true, autoload: true });
       d.insert(newDoc, function (err, insertedDoc) {
-        Object.keys(insertedDoc).length.should.equal(4);
-        insertedDoc.createdAt.getTime().should.equal(234);   // Not modified
+         expect(Object.keys(insertedDoc).length).to.equal(4);
+         expect(insertedDoc.createdAt.getTime()).to.equal(234);   // Not modified
         assert.isBelow(insertedDoc.updatedAt.getTime() - beginning, reloadTimeUpperBound);   // Created
 
         d.find({}, function (err, docs) {
@@ -343,8 +343,8 @@ describe('Database', function () {
       var newDoc = { hello: 'world', updatedAt: new Date(234) }, beginning = Date.now();
       d = new Datastore({ filename: testDb, timestampData: true, autoload: true });
       d.insert(newDoc, function (err, insertedDoc) {
-        Object.keys(insertedDoc).length.should.equal(4);
-        insertedDoc.updatedAt.getTime().should.equal(234);   // Not modified
+         expect(Object.keys(insertedDoc).length).to.equal(4);
+         expect(insertedDoc.updatedAt.getTime()).to.equal(234);   // Not modified
         assert.isBelow(insertedDoc.createdAt.getTime() - beginning, reloadTimeUpperBound);   // Created
 
         d.find({}, function (err, docs) {
@@ -363,8 +363,8 @@ describe('Database', function () {
 
     it('Can insert a doc with id 0', function (done) {
       d.insert({ _id: 0, hello: 'world' }, function (err, doc) {
-        doc._id.should.equal(0);
-        doc.hello.should.equal('world');
+         expect(doc._id).to.equal(0);
+         expect(doc.hello).to.equal('world');
         done();
       });
     });
@@ -394,8 +394,8 @@ describe('Database', function () {
         for (i = 0; i < currentUncaughtExceptionHandlers.length; i += 1) {
           process.on('uncaughtException', currentUncaughtExceptionHandlers[i]);
         }
-
-        ex.message.should.equal('SOME EXCEPTION');
+ 
+        expect(ex.message).to.equal('SOME EXCEPTION');
         done();
       });
 
@@ -426,8 +426,8 @@ describe('Database', function () {
                   var doc1 = _.find(data, function (d) { return d._id === _doc1._id; })
                     , doc2 = _.find(data, function (d) { return d._id === _doc2._id; })
                     ;
-
-                  data.length.should.equal(2);
+ 
+                  expect(data.length).to.equal(2);
                   assert.deepEqual(doc1, { _id: doc1._id, tf: 4 });
                   assert.deepEqual(doc2, { _id: doc2._id, tf: 4, an: 'other' });
 
@@ -450,8 +450,8 @@ describe('Database', function () {
                   var doc1 = _.find(data, function (d) { return d._id === _doc1._id; })
                     , doc2 = _.find(data, function (d) { return d._id === _doc2._id; })
                     ;
-
-                  data.length.should.equal(2);
+ 
+                  expect(data.length).to.equal(2);
                   assert.deepEqual(doc1, { _id: doc1._id, tf: 6 });
                   assert.deepEqual(doc2, { _id: doc2._id, tf: 9 });
 
@@ -476,8 +476,8 @@ describe('Database', function () {
                     , doc3 = _.find(data, function (d) { return d._id === _doc3._id; })
                     , doc4 = _.find(data, function (d) { return d._id === _doc4._id; })
                     ;
-
-                  data.length.should.equal(4);
+ 
+                  expect(data.length).to.equal(4);
                   assert.deepEqual(doc1, { _id: doc1._id, tf: 4 });
                   assert.deepEqual(doc2, { _id: doc2._id, tf: 6 });
                   assert.deepEqual(doc3, { _id: doc3._id, tf: 4, an: 'other' });
@@ -502,8 +502,8 @@ describe('Database', function () {
                   var doc2 = _.find(data, function (d) { return d._id === _doc2._id; })
                     , doc4 = _.find(data, function (d) { return d._id === _doc4._id; })
                     ;
-
-                  data.length.should.equal(2);
+ 
+                  expect(data.length).to.equal(2);
                   assert.deepEqual(doc2, { _id: doc2._id, tf: 6 });
                   assert.deepEqual(doc4, { _id: doc4._id, tf: 9 });
 
@@ -522,7 +522,7 @@ describe('Database', function () {
           setTimeout(function () {
             d.findOne({}, function (err, doc) {
               assert.isNull(err);
-              doc.hello.should.equal('world');
+               expect(doc.hello).to.equal('world');
 
               setTimeout(function () {
                 d.findOne({}, function (err, doc) {
@@ -532,7 +532,7 @@ describe('Database', function () {
                   d.on('compaction.done', function () {
                     // After compaction, no more mention of the document, correctly removed
                     var datafileContents = fs.readFileSync(testDb, 'utf8');
-                    datafileContents.split('\n').length.should.equal(2);
+                     expect(datafileContents.split('\n').length).to.equal(2);
                     assert.isNull(datafileContents.match(/world/));
 
                     // New datastore on same datafile is empty
@@ -562,18 +562,18 @@ describe('Database', function () {
               setTimeout(function () {
                 d.find({}, function (err, docs) {
                   assert.isNull(err);
-                  docs.length.should.equal(3);
+                   expect(docs.length).to.equal(3);
 
                   setTimeout(function () {
                     d.find({}, function (err, docs) {
                       assert.isNull(err);
-                      docs.length.should.equal(1);
-                      docs[0].hello.should.equal('world3');
+                       expect(docs.length).to.equal(1);
+                       expect(docs[0].hello).to.equal('world3');
 
                       setTimeout(function () {
                         d.find({}, function (err, docs) {
                           assert.isNull(err);
-                          docs.length.should.equal(0);
+                           expect(docs.length).to.equal(0);
 
                           done();
                         });
@@ -596,12 +596,12 @@ describe('Database', function () {
               setTimeout(function () {
                 d.find({}, function (err, docs) {
                   assert.isNull(err);
-                  docs.length.should.equal(3);
+                   expect(docs.length).to.equal(3);
 
                   setTimeout(function () {
                     d.find({}, function (err, docs) {
                       assert.isNull(err);
-                      docs.length.should.equal(2);
+                       expect(docs.length).to.equal(2);
 
 
                       docs[0].hello.should.not.equal('world1');
@@ -635,10 +635,10 @@ describe('Database', function () {
       , function (cb) {   // Test with empty object
         d.find({}, function (err, docs) {
           assert.isNull(err);
-          docs.length.should.equal(3);
+           expect(docs.length).to.equal(3);
           _.pluck(docs, 'somedata').should.contain('ok');
           _.pluck(docs, 'somedata').should.contain('another');
-          _.find(docs, function (d) { return d.somedata === 'another' }).plus.should.equal('additional data');
+           expect(_.find(docs, function (d) { return d.somedata === 'another' }).plus).to.equal('additional data');
           _.pluck(docs, 'somedata').should.contain('again');
           return cb();
         });
@@ -658,7 +658,7 @@ describe('Database', function () {
       , function (cb) {   // Test with query that will return docs
         d.find({ somedata: 'again' }, function (err, docs) {
           assert.isNull(err);
-          docs.length.should.equal(2);
+           expect(docs.length).to.equal(2);
           _.pluck(docs, 'somedata').should.not.contain('ok');
           return cb();
         });
@@ -666,7 +666,7 @@ describe('Database', function () {
       , function (cb) {   // Test with query that doesn't match anything
         d.find({ somedata: 'nope' }, function (err, docs) {
           assert.isNull(err);
-          docs.length.should.equal(0);
+           expect(docs.length).to.equal(0);
           return cb();
         });
       }
@@ -685,8 +685,8 @@ describe('Database', function () {
       , function (cb) {   // Test with query that will return docs
         d.findOne({ somedata: 'ok' }, function (err, doc) {
           assert.isNull(err);
-          Object.keys(doc).length.should.equal(2);
-          doc.somedata.should.equal('ok');
+           expect(Object.keys(doc).length).to.equal(2);
+           expect(doc.somedata).to.equal('ok');
           assert.isDefined(doc._id);
           return cb();
         });
@@ -709,7 +709,7 @@ describe('Database', function () {
       d.insert({ now: date1, sth: { name: 'nedb' } }, function () {
         d.findOne({ now: date1 }, function (err, doc) {
           assert.isNull(err);
-          doc.sth.name.should.equal('nedb');
+           expect(doc.sth.name).to.equal('nedb');
 
           d.findOne({ now: date2 }, function (err, doc) {
             assert.isNull(err);
@@ -717,7 +717,7 @@ describe('Database', function () {
 
             d.findOne({ sth: { name: 'nedb' } }, function (err, doc) {
               assert.isNull(err);
-              doc.sth.name.should.equal('nedb');
+               expect(doc.sth.name).to.equal('nedb');
 
               d.findOne({ sth: { name: 'other' } }, function (err, doc) {
                 assert.isNull(err);
@@ -735,7 +735,7 @@ describe('Database', function () {
       d.insert({ greeting: { english: 'hello' } }, function () {
         d.findOne({ "greeting.english": 'hello' }, function (err, doc) {
           assert.isNull(err);
-          doc.greeting.english.should.equal('hello');
+           expect(doc.greeting.english).to.equal('hello');
 
           d.findOne({ "greeting.english": 'hellooo' }, function (err, doc) {
             assert.isNull(err);
@@ -758,19 +758,19 @@ describe('Database', function () {
           d.insert({ fruits: ['banana'] }, function (err, doc3) {
             d.find({ fruits: 'pear' }, function (err, docs) {
               assert.isNull(err);
-              docs.length.should.equal(2);
+               expect(docs.length).to.equal(2);
               _.pluck(docs, '_id').should.contain(doc1._id);
               _.pluck(docs, '_id').should.contain(doc2._id);
 
               d.find({ fruits: 'banana' }, function (err, docs) {
                 assert.isNull(err);
-                docs.length.should.equal(2);
+                 expect(docs.length).to.equal(2);
                 _.pluck(docs, '_id').should.contain(doc1._id);
                 _.pluck(docs, '_id').should.contain(doc3._id);
 
                 d.find({ fruits: 'doesntexist' }, function (err, docs) {
                   assert.isNull(err);
-                  docs.length.should.equal(0);
+                   expect(docs.length).to.equal(0);
 
                   done();
                 });
@@ -803,13 +803,13 @@ describe('Database', function () {
           doc.hello = 'changed';
 
           d.findOne({ a: 2 }, function (err, doc) {
-            doc.hello.should.equal('world');
+             expect(doc.hello).to.equal('world');
 
             d.find({ a: 2 }, function (err, docs) {
               docs[0].hello = 'changed';
 
               d.findOne({ a: 2 }, function (err, doc) {
-                doc.hello.should.equal('world');
+                 expect(doc.hello).to.equal('world');
 
                 done();
               });
@@ -826,9 +826,9 @@ describe('Database', function () {
             d.insert({ a: 15, hello: 'home' }, function () {
               d.find({}).sort({ a: 1 }).limit(2).exec(function (err, docs) {
                 assert.isNull(err);
-                docs.length.should.equal(2);
-                docs[0].hello.should.equal('world');
-                docs[1].hello.should.equal('blueplanet');
+                 expect(docs.length).to.equal(2);
+                 expect(docs[0].hello).to.equal('world');
+                 expect(docs[1].hello).to.equal('blueplanet');
                 done();
               });
             });
@@ -845,17 +845,17 @@ describe('Database', function () {
               // No skip no query
               d.findOne({}).sort({ a: 1 }).exec(function (err, doc) {
                 assert.isNull(err);
-                doc.hello.should.equal('world');
+                 expect(doc.hello).to.equal('world');
                 
                 // A query
                 d.findOne({ a: { $gt: 14 } }).sort({ a: 1 }).exec(function (err, doc) {
                   assert.isNull(err);
-                  doc.hello.should.equal('home');
+                   expect(doc.hello).to.equal('home');
 
                   // And a skip
                   d.findOne({ a: { $gt: 14 } }).sort({ a: 1 }).skip(1).exec(function (err, doc) {
                     assert.isNull(err);
-                    doc.hello.should.equal('earth');
+                     expect(doc.hello).to.equal('earth');
 
                     // No result
                     d.findOne({ a: { $gt: 14 } }).sort({ a: 1 }).skip(2).exec(function (err, doc) {
@@ -878,12 +878,12 @@ describe('Database', function () {
         d.insert({ a: 24, hello: 'earth' }, function (err, doc1) {
           d.find({ a: 2 }, { a: 0, _id: 0 }, function (err, docs) {
             assert.isNull(err);
-            docs.length.should.equal(1);
+             expect(docs.length).to.equal(1);
             assert.deepEqual(docs[0], { hello: 'world' });
 
             d.find({ a: 2 }, { a: 0, _id: 0 }).exec(function (err, docs) {
               assert.isNull(err);
-              docs.length.should.equal(1);
+               expect(docs.length).to.equal(1);
               assert.deepEqual(docs[0], { hello: 'world' });
 
               // Can't use both modes at once if not _id
@@ -949,7 +949,7 @@ describe('Database', function () {
       , function (cb) {   // Test with empty object
         d.count({}, function (err, docs) {
           assert.isNull(err);
-          docs.should.equal(3);
+           expect(docs).to.equal(3);
           return cb();
         });
       }
@@ -968,14 +968,14 @@ describe('Database', function () {
       , function (cb) {   // Test with query that will return docs
         d.count({ somedata: 'again' }, function (err, docs) {
           assert.isNull(err);
-          docs.should.equal(2);
+           expect(docs).to.equal(2);
           return cb();
         });
       }
       , function (cb) {   // Test with query that doesn't match anything
         d.count({ somedata: 'nope' }, function (err, docs) {
           assert.isNull(err);
-          docs.should.equal(0);
+           expect(docs).to.equal(0);
           return cb();
         });
       }
@@ -988,15 +988,15 @@ describe('Database', function () {
           d.insert({ fruits: ['banana'] }, function (err, doc3) {
             d.count({ fruits: 'pear' }, function (err, docs) {
               assert.isNull(err);
-              docs.should.equal(2);
+               expect(docs).to.equal(2);
 
               d.count({ fruits: 'banana' }, function (err, docs) {
                 assert.isNull(err);
-                docs.should.equal(2);
+                 expect(docs).to.equal(2);
 
                 d.count({ fruits: 'doesntexist' }, function (err, docs) {
                   assert.isNull(err);
-                  docs.should.equal(0);
+                   expect(docs).to.equal(0);
 
                   done();
                 });
@@ -1034,15 +1034,15 @@ describe('Database', function () {
       , function (cb) {   // Test with query that doesn't match anything
         d.update({ somedata: 'nope' }, { newDoc: 'yes' }, { multi: true }, function (err, n) {
           assert.isNull(err);
-          n.should.equal(0);
+           expect(n).to.equal(0);
 
           d.find({}, function (err, docs) {
             var doc1 = _.find(docs, function (d) { return d.somedata === 'ok'; })
               , doc2 = _.find(docs, function (d) { return d.somedata === 'again'; })
               , doc3 = _.find(docs, function (d) { return d.somedata === 'another'; })
               ;
-
-            docs.length.should.equal(3);
+ 
+            expect(docs.length).to.equal(3);
             assert.isUndefined(_.find(docs, function (d) { return d.newDoc === 'yes'; }));
 
             assert.deepEqual(doc1, { _id: doc1._id, somedata: 'ok' });
@@ -1062,18 +1062,18 @@ describe('Database', function () {
       d.insert({ hello: 'world' }, function (err, insertedDoc) {
         assert.isBelow(insertedDoc.updatedAt.getTime() - beginning, reloadTimeUpperBound);
         assert.isBelow(insertedDoc.createdAt.getTime() - beginning, reloadTimeUpperBound);
-        Object.keys(insertedDoc).length.should.equal(4);
+         expect(Object.keys(insertedDoc).length).to.equal(4);
 
         // Wait 100ms before performing the update
         setTimeout(function () {
           var step1 = Date.now();
           d.update({ _id: insertedDoc._id }, { $set: { hello: 'mars' } }, {}, function () {
             d.find({ _id: insertedDoc._id }, function (err, docs) {
-              docs.length.should.equal(1);
-              Object.keys(docs[0]).length.should.equal(4);
-              docs[0]._id.should.equal(insertedDoc._id);
-              docs[0].createdAt.should.equal(insertedDoc.createdAt);
-              docs[0].hello.should.equal('mars');
+               expect(docs.length).to.equal(1);
+               expect(Object.keys(docs[0]).length).to.equal(4);
+               expect(docs[0]._id).to.equal(insertedDoc._id);
+               expect(docs[0].createdAt).to.equal(insertedDoc.createdAt);
+               expect(docs[0].hello).to.equal('mars');
               assert.isAbove(docs[0].updatedAt.getTime() - beginning, 99);   // updatedAt modified
               assert.isBelow(docs[0].updatedAt.getTime() - step1, reloadTimeUpperBound);   // updatedAt modified
 
@@ -1094,20 +1094,20 @@ describe('Database', function () {
             , doc2 = _.find(docs, function (d) { return d._id === id2; })
             , doc3 = _.find(docs, function (d) { return d._id === id3; })
             ;
-
-          docs.length.should.equal(3);
-
-          Object.keys(doc1).length.should.equal(2);
-          doc1.somedata.should.equal('ok');
-          doc1._id.should.equal(id1);
-
-          Object.keys(doc2).length.should.equal(2);
-          doc2.newDoc.should.equal('yes');
-          doc2._id.should.equal(id2);
-
-          Object.keys(doc3).length.should.equal(2);
-          doc3.newDoc.should.equal('yes');
-          doc3._id.should.equal(id3);
+ 
+          expect(docs.length).to.equal(3);
+ 
+          expect(Object.keys(doc1).length).to.equal(2);
+           expect(doc1.somedata).to.equal('ok');
+           expect(doc1._id).to.equal(id1);
+ 
+          expect(Object.keys(doc2).length).to.equal(2);
+           expect(doc2.newDoc).to.equal('yes');
+           expect(doc2._id).to.equal(id2);
+ 
+          expect(Object.keys(doc3).length).to.equal(2);
+           expect(doc3.newDoc).to.equal('yes');
+           expect(doc3._id).to.equal(id3);
 
           return cb();
         });
@@ -1130,7 +1130,7 @@ describe('Database', function () {
       , function (cb) {
         d.update({ somedata: 'again' }, { newDoc: 'yes' }, { multi: true }, function (err, n) {
           assert.isNull(err);
-          n.should.equal(2);
+           expect(n).to.equal(2);
           return cb();
         });
       }
@@ -1152,8 +1152,8 @@ describe('Database', function () {
             , doc2 = _.find(docs, function (d) { return d._id === id2; })
             , doc3 = _.find(docs, function (d) { return d._id === id3; })
             ;
-
-          docs.length.should.equal(3);
+ 
+          expect(docs.length).to.equal(3);
 
           assert.deepEqual(doc1, { somedata: 'ok', _id: doc1._id });
 
@@ -1188,7 +1188,7 @@ describe('Database', function () {
       , function (cb) {   // Test with query that doesn't match anything
         d.update({ somedata: 'again' }, { newDoc: 'yes' }, { multi: false }, function (err, n) {
           assert.isNull(err);
-          n.should.equal(1);
+           expect(n).to.equal(1);
           return cb();
         });
       }
@@ -1205,26 +1205,26 @@ describe('Database', function () {
       it('Can perform upserts if needed', function (done) {
         d.update({ impossible: 'db is empty anyway' }, { newDoc: true }, {}, function (err, nr, upsert) {
           assert.isNull(err);
-          nr.should.equal(0);
+           expect(nr).to.equal(0);
           assert.isUndefined(upsert);
 
           d.find({}, function (err, docs) {
-            docs.length.should.equal(0);   // Default option for upsert is false
+             expect(docs.length).to.equal(0);   // Default option for upsert is false
 
             d.update({ impossible: 'db is empty anyway' }, { something: "created ok" }, { upsert: true }, function (err, nr, newDoc) {
               assert.isNull(err);
-              nr.should.equal(1);
-              newDoc.something.should.equal("created ok");
+               expect(nr).to.equal(1);
+               expect(newDoc.something).to.equal("created ok");
               assert.isDefined(newDoc._id);
 
               d.find({}, function (err, docs) {
-                docs.length.should.equal(1);   // Default option for upsert is false
-                docs[0].something.should.equal("created ok");
+                 expect(docs.length).to.equal(1);   // Default option for upsert is false
+                 expect(docs[0].something).to.equal("created ok");
                 
                 // Modifying the returned upserted document doesn't modify the database
                 newDoc.newField = true;
                 d.find({}, function (err, docs) {
-                  docs[0].something.should.equal("created ok");
+                   expect(docs[0].something).to.equal("created ok");
                   assert.isUndefined(docs[0].newField);
                 
                   done();
@@ -1239,11 +1239,11 @@ describe('Database', function () {
         d.update({ $or: [{ a: 4 }, { a: 5 }] }, { hello: 'world', bloup: 'blap' }, { upsert: true }, function (err) {
           d.find({}, function (err, docs) {
             assert.isNull(err);
-            docs.length.should.equal(1);
+             expect(docs.length).to.equal(1);
             var doc = docs[0];
-            Object.keys(doc).length.should.equal(3);
-            doc.hello.should.equal('world');
-            doc.bloup.should.equal('blap');
+             expect(Object.keys(doc).length).to.equal(3);
+             expect(doc.hello).to.equal('world');
+             expect(doc.bloup).to.equal('blap');
             done();
           });
         });
@@ -1253,11 +1253,11 @@ describe('Database', function () {
         d.update({ $or: [{ a: 4 }, { a: 5 }] }, { $set: { hello: 'world' }, $inc: { bloup: 3 } }, { upsert: true }, function (err) {
           d.find({ hello: 'world' }, function (err, docs) {
             assert.isNull(err);
-            docs.length.should.equal(1);
+             expect(docs.length).to.equal(1);
             var doc = docs[0];
-            Object.keys(doc).length.should.equal(3);
-            doc.hello.should.equal('world');
-            doc.bloup.should.equal(3);
+             expect(Object.keys(doc).length).to.equal(3);
+             expect(doc.hello).to.equal('world');
+             expect(doc.bloup).to.equal(3);
             done();
           });
         });
@@ -1267,12 +1267,12 @@ describe('Database', function () {
         d.update({ $or: [{ a: 4 }, { a: 5 }], cac: 'rrr' }, { $set: { hello: 'world' }, $inc: { bloup: 3 } }, { upsert: true }, function (err) {
           d.find({ hello: 'world' }, function (err, docs) {
             assert.isNull(err);
-            docs.length.should.equal(1);
+             expect(docs.length).to.equal(1);
             var doc = docs[0];
-            Object.keys(doc).length.should.equal(4);
-            doc.cac.should.equal('rrr');
-            doc.hello.should.equal('world');
-            doc.bloup.should.equal(3);
+             expect(Object.keys(doc).length).to.equal(4);
+             expect(doc.cac).to.equal('rrr');
+             expect(doc.hello).to.equal('world');
+             expect(doc.bloup).to.equal(3);
             done();
           });
         });
@@ -1318,13 +1318,13 @@ describe('Database', function () {
 
         d.update({}, { $set: { something: 'changed' }, $inc: { other: 10 } }, { multi: false }, function (err, nr) {
           assert.isNull(err);
-          nr.should.equal(1);
+           expect(nr).to.equal(1);
 
           d.findOne({ _id: id }, function (err, doc) {
-            Object.keys(doc).length.should.equal(3);
-            doc._id.should.equal(id);
-            doc.something.should.equal('changed');
-            doc.other.should.equal(50);
+             expect(Object.keys(doc).length).to.equal(3);
+             expect(doc._id).to.equal(id);
+             expect(doc.something).to.equal('changed');
+             expect(doc.other).to.equal(50);
 
             done();
           });
@@ -1335,16 +1335,16 @@ describe('Database', function () {
     it('Can upsert a document even with modifiers', function (done) {
       d.update({ bloup: 'blap' }, { $set: { hello: 'world' } }, { upsert: true }, function (err, nr, newDoc) {
         assert.isNull(err);
-        nr.should.equal(1);
-        newDoc.bloup.should.equal('blap');
-        newDoc.hello.should.equal('world');
+         expect(nr).to.equal(1);
+         expect(newDoc.bloup).to.equal('blap');
+         expect(newDoc.hello).to.equal('world');
         assert.isDefined(newDoc._id);
 
         d.find({}, function (err, docs) {
-          docs.length.should.equal(1);
-          Object.keys(docs[0]).length.should.equal(3);
-          docs[0].hello.should.equal('world');
-          docs[0].bloup.should.equal('blap');
+           expect(docs.length).to.equal(1);
+           expect(Object.keys(docs[0]).length).to.equal(3);
+           expect(docs[0].hello).to.equal('world');
+           expect(docs[0].bloup).to.equal('blap');
           assert.isDefined(docs[0]._id);
 
           done();
@@ -1357,13 +1357,13 @@ describe('Database', function () {
         // Correct methos
         d.update({}, { $set: { "bloup.blip": "hello" } }, {}, function () {
           d.findOne({}, function (err, doc) {
-            doc.bloup.blip.should.equal("hello");
-            doc.bloup.other.should.equal(true);
+             expect(doc.bloup.blip).to.equal("hello");
+             expect(doc.bloup.other).to.equal(true);
 
             // Wrong
             d.update({}, { $set: { bloup: { blip: "ola" } } }, {}, function () {
               d.findOne({}, function (err, doc) {
-                doc.bloup.blip.should.equal("ola");
+                 expect(doc.bloup.blip).to.equal("ola");
                 assert.isUndefined(doc.bloup.other);   // This information was lost
 
                 done();
@@ -1407,19 +1407,19 @@ describe('Database', function () {
           assert.isDefined(err);
 
           d.find({}, function (err, docs) {
-            docs.length.should.equal(1);
-            Object.keys(docs[0]).length.should.equal(2);
-            docs[0].a.should.equal(2);
-            docs[0]._id.should.equal(newDoc._id);
+             expect(docs.length).to.equal(1);
+             expect(Object.keys(docs[0]).length).to.equal(2);
+             expect(docs[0].a).to.equal(2);
+             expect(docs[0]._id).to.equal(newDoc._id);
 
             d.update({ a: 2 }, { $set: { _id: 'nope' } }, {}, function (err) {
               assert.isDefined(err);
 
               d.find({}, function (err, docs) {
-                docs.length.should.equal(1);
-                Object.keys(docs[0]).length.should.equal(2);
-                docs[0].a.should.equal(2);
-                docs[0]._id.should.equal(newDoc._id);
+                 expect(docs.length).to.equal(1);
+                 expect(Object.keys(docs[0]).length).to.equal(2);
+                 expect(docs[0].a).to.equal(2);
+                 expect(docs[0]._id).to.equal(newDoc._id);
 
                 done();
               });
@@ -1437,9 +1437,9 @@ describe('Database', function () {
 
             d.find({}, function (err, docs) {
               docs.sort(function (a, b) { return a.a - b.a; });
-              docs.length.should.equal(2);
-              _.isEqual(docs[0], { _id: doc1._id, a:1, hello: 'world' }).should.equal(true);
-              _.isEqual(docs[1], { _id: doc2._id, a:2, hello: 'changed' }).should.equal(true);
+               expect(docs.length).to.equal(2);
+               expect(_.isEqual(docs[0], { _id: doc1._id, a:1, hello: 'world' })).to.equal(true);
+               expect(_.isEqual(docs[1], { _id: doc2._id, a:2, hello: 'changed' })).to.equal(true);
 
               // Even after a reload the database state hasn't changed
               d.loadDatabase(function (err) {
@@ -1447,9 +1447,9 @@ describe('Database', function () {
 
                 d.find({}, function (err, docs) {
                   docs.sort(function (a, b) { return a.a - b.a; });
-                  docs.length.should.equal(2);
-                  _.isEqual(docs[0], { _id: doc1._id, a:1, hello: 'world' }).should.equal(true);
-                  _.isEqual(docs[1], { _id: doc2._id, a:2, hello: 'changed' }).should.equal(true);
+                   expect(docs.length).to.equal(2);
+                   expect(_.isEqual(docs[0], { _id: doc1._id, a:1, hello: 'world' })).to.equal(true);
+                   expect(_.isEqual(docs[1], { _id: doc2._id, a:2, hello: 'changed' })).to.equal(true);
 
                   done();
                 });
@@ -1469,10 +1469,10 @@ describe('Database', function () {
 
               d.find({}, function (err, docs) {
                 docs.sort(function (a, b) { return a.a - b.a; });
-                docs.length.should.equal(3);
-                _.isEqual(docs[0], { _id: doc1._id, a:1, hello: 'changed' }).should.equal(true);
-                _.isEqual(docs[1], { _id: doc2._id, a:2, hello: 'changed' }).should.equal(true);
-                _.isEqual(docs[2], { _id: doc3._id, a:5, hello: 'pluton' }).should.equal(true);
+                 expect(docs.length).to.equal(3);
+                 expect(_.isEqual(docs[0], { _id: doc1._id, a:1, hello: 'changed' })).to.equal(true);
+                 expect(_.isEqual(docs[1], { _id: doc2._id, a:2, hello: 'changed' })).to.equal(true);
+                 expect(_.isEqual(docs[2], { _id: doc3._id, a:5, hello: 'pluton' })).to.equal(true);
 
                 // Even after a reload the database state hasn't changed
                 d.loadDatabase(function (err) {
@@ -1480,10 +1480,10 @@ describe('Database', function () {
 
                   d.find({}, function (err, docs) {
                     docs.sort(function (a, b) { return a.a - b.a; });
-                    docs.length.should.equal(3);
-                    _.isEqual(docs[0], { _id: doc1._id, a:1, hello: 'changed' }).should.equal(true);
-                    _.isEqual(docs[1], { _id: doc2._id, a:2, hello: 'changed' }).should.equal(true);
-                    _.isEqual(docs[2], { _id: doc3._id, a:5, hello: 'pluton' }).should.equal(true);
+                     expect(docs.length).to.equal(3);
+                     expect(_.isEqual(docs[0], { _id: doc1._id, a:1, hello: 'changed' })).to.equal(true);
+                     expect(_.isEqual(docs[1], { _id: doc2._id, a:2, hello: 'changed' })).to.equal(true);
+                     expect(_.isEqual(docs[2], { _id: doc3._id, a:5, hello: 'pluton' })).to.equal(true);
 
                     done();
                   });
@@ -1501,16 +1501,16 @@ describe('Database', function () {
           d.insert({ a:5, hello: 'pluton' }, function (err, doc3) {
             d.update({ a: 2 }, { $inc: { a: 10 } }, function (err, nr) {
               assert.isNull(err);
-              nr.should.equal(1);
+               expect(nr).to.equal(1);
               d.find({}, function (err, docs) {
                 var d1 = _.find(docs, function (doc) { return doc._id === doc1._id })
                   , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
                   , d3 = _.find(docs, function (doc) { return doc._id === doc3._id })
                   ;
-                  
-                d1.a.should.equal(1);
-                d2.a.should.equal(12);
-                d3.a.should.equal(5);
+                   
+                expect(d1.a).to.equal(1);
+                 expect(d2.a).to.equal(12);
+                 expect(d3.a).to.equal(5);
                 
                 done();
               });
@@ -1538,9 +1538,9 @@ describe('Database', function () {
                   ;
 
                 // All changes rolled back, including those that didn't trigger an error
-                d1.a.should.equal(4);
-                d2.a.should.equal(5);
-                d3.a.should.equal('abc');
+                 expect(d1.a).to.equal(4);
+                 expect(d2.a).to.equal(5);
+                 expect(d3.a).to.equal('abc');
               });
 
               done();
@@ -1564,9 +1564,9 @@ describe('Database', function () {
               , d1 = _.find(docs, function (doc) { return doc._id === doc1._id })
               , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
               ;
-
-              d1.a.should.equal(4);
-              d2.a.should.equal(5);
+ 
+              expect(d1.a).to.equal(4);
+               expect(d2.a).to.equal(5);
             });
 
             done();
@@ -1577,29 +1577,29 @@ describe('Database', function () {
 
     it("If options.returnUpdatedDocs is true, return all matched docs", function (done) {
       d.insert([{ a: 4 }, { a: 5 }, { a: 6 }], function (err, docs) {
-        docs.length.should.equal(3);
+         expect(docs.length).to.equal(3);
 
         d.update({ a: 7 }, { $set: { u: 1 } }, { multi: true, returnUpdatedDocs: true }, function (err, num, updatedDocs) {
-          num.should.equal(0);
-          updatedDocs.length.should.equal(0);
+           expect(num).to.equal(0);
+           expect(updatedDocs.length).to.equal(0);
 
           d.update({ a: 5 }, { $set: { u: 2 } }, { multi: true, returnUpdatedDocs: true }, function (err, num, updatedDocs) {
-            num.should.equal(1);
-            updatedDocs.length.should.equal(1);
-            updatedDocs[0].a.should.equal(5);
-            updatedDocs[0].u.should.equal(2);
+             expect(num).to.equal(1);
+             expect(updatedDocs.length).to.equal(1);
+             expect(updatedDocs[0].a).to.equal(5);
+             expect(updatedDocs[0].u).to.equal(2);
 
             d.update({ a: { $in: [4, 6] } }, { $set: { u: 3 } }, { multi: true, returnUpdatedDocs: true }, function (err, num, updatedDocs) {
-              num.should.equal(2);
-              updatedDocs.length.should.equal(2);
-              updatedDocs[0].u.should.equal(3);
-              updatedDocs[1].u.should.equal(3);
+               expect(num).to.equal(2);
+               expect(updatedDocs.length).to.equal(2);
+               expect(updatedDocs[0].u).to.equal(3);
+               expect(updatedDocs[1].u).to.equal(3);
               if (updatedDocs[0].a === 4) {
-                updatedDocs[0].a.should.equal(4);
-                updatedDocs[1].a.should.equal(6);
+                 expect(updatedDocs[0].a).to.equal(4);
+                 expect(updatedDocs[1].a).to.equal(6);
               } else {
-                updatedDocs[0].a.should.equal(6);
-                updatedDocs[1].a.should.equal(4);
+                 expect(updatedDocs[0].a).to.equal(6);
+                 expect(updatedDocs[1].a).to.equal(4);
               }
 
               done();
@@ -1619,14 +1619,14 @@ describe('Database', function () {
         setTimeout(function () {
           d2.update({ a: 1 }, { $set: { b: 2 } }, {});
           d2.findOne({ a: 1 }, function (err, doc) {
-            doc.createdAt.getTime().should.equal(createdAt);
+             expect(doc.createdAt.getTime()).to.equal(createdAt);
             assert.isBelow(Date.now() - doc.updatedAt.getTime(), 5);
 
             // Complete replacement
             setTimeout(function () {
               d2.update({ a: 1 }, { c: 3 }, {});
               d2.findOne({ c: 3 }, function (err, doc) {
-                doc.createdAt.getTime().should.equal(createdAt);
+                 expect(doc.createdAt.getTime()).to.equal(createdAt);
                 assert.isBelow(Date.now() - doc.updatedAt.getTime(), 5);
 
                 done();
@@ -1647,16 +1647,16 @@ describe('Database', function () {
         // returnUpdatedDocs set to false
         d.update({ a: 1 }, { $set: { b: 20 } }, {}, function (err, numAffected, affectedDocuments, upsert) {
           assert.isNull(err);
-          numAffected.should.equal(1);
+           expect(numAffected).to.equal(1);
           assert.isUndefined(affectedDocuments);
           assert.isUndefined(upsert);
 
           // returnUpdatedDocs set to true
           d.update({ a: 1 }, { $set: { b: 21 } }, { returnUpdatedDocs: true }, function (err, numAffected, affectedDocuments, upsert) {
             assert.isNull(err);
-            numAffected.should.equal(1);
-            affectedDocuments.a.should.equal(1);
-            affectedDocuments.b.should.equal(21);
+             expect(numAffected).to.equal(1);
+             expect(affectedDocuments.a).to.equal(1);
+             expect(affectedDocuments.b).to.equal(21);
             assert.isUndefined(upsert);
 
             done();
@@ -1671,15 +1671,15 @@ describe('Database', function () {
         // returnUpdatedDocs set to false
         d.update({}, { $set: { b: 20 } }, { multi: true }, function (err, numAffected, affectedDocuments, upsert) {
           assert.isNull(err);
-          numAffected.should.equal(2);
+           expect(numAffected).to.equal(2);
           assert.isUndefined(affectedDocuments);
           assert.isUndefined(upsert);
 
           // returnUpdatedDocs set to true
           d.update({}, { $set: { b: 21 } }, { multi: true, returnUpdatedDocs: true }, function (err, numAffected, affectedDocuments, upsert) {
             assert.isNull(err);
-            numAffected.should.equal(2);
-            affectedDocuments.length.should.equal(2);
+             expect(numAffected).to.equal(2);
+             expect(affectedDocuments.length).to.equal(2);
             assert.isUndefined(upsert);
 
             done();
@@ -1694,20 +1694,20 @@ describe('Database', function () {
         // Upsert flag not set
         d.update({ a: 3 }, { $set: { b: 20 } }, {}, function (err, numAffected, affectedDocuments, upsert) {
           assert.isNull(err);
-          numAffected.should.equal(0);
+           expect(numAffected).to.equal(0);
           assert.isUndefined(affectedDocuments);
           assert.isUndefined(upsert);
 
           // Upsert flag set
           d.update({ a: 3 }, { $set: { b: 21 } }, { upsert: true }, function (err, numAffected, affectedDocuments, upsert) {
             assert.isNull(err);
-            numAffected.should.equal(1);
-            affectedDocuments.a.should.equal(3);
-            affectedDocuments.b.should.equal(21);
-            upsert.should.equal(true);
+             expect(numAffected).to.equal(1);
+             expect(affectedDocuments.a).to.equal(3);
+             expect(affectedDocuments.b).to.equal(21);
+             expect(upsert).to.equal(true);
 
             d.find({}, function (err, docs) {
-              docs.length.should.equal(3);
+               expect(docs.length).to.equal(3);
               done();
             });
           });
@@ -1728,11 +1728,11 @@ describe('Database', function () {
       // Test DB status
       function testPostUpdateState (cb) {
         d.find({}, function (err, docs) {
-          docs.length.should.equal(1);
-
-          Object.keys(docs[0]).length.should.equal(2);
-          docs[0]._id.should.equal(id1);
-          docs[0].somedata.should.equal('ok');
+           expect(docs.length).to.equal(1);
+ 
+          expect(Object.keys(docs[0]).length).to.equal(2);
+           expect(docs[0]._id).to.equal(id1);
+           expect(docs[0].somedata).to.equal('ok');
 
           return cb();
         });
@@ -1755,7 +1755,7 @@ describe('Database', function () {
       , function (cb) {   // Test with query that doesn't match anything
         d.remove({ somedata: 'again' }, { multi: true }, function (err, n) {
           assert.isNull(err);
-          n.should.equal(2);
+           expect(n).to.equal(2);
           return cb();
         });
       }
@@ -1773,7 +1773,7 @@ describe('Database', function () {
         d.insert({ planet: 'Mars' }, function () {
           d.insert({ planet: 'Saturn' }, function () {
             d.find({}, function (err, docs) {
-              docs.length.should.equal(3);
+               expect(docs.length).to.equal(3);
 
               // Remove two docs simultaneously
               var toRemove = ['Mars', 'Saturn'];
@@ -1781,7 +1781,7 @@ describe('Database', function () {
                 d.remove({ planet: planet }, function (err) { return cb(err); });
               }, function (err) {
                 d.find({}, function (err, docs) {
-                  docs.length.should.equal(1);
+                   expect(docs.length).to.equal(1);
 
                   done();
                 });
@@ -1813,9 +1813,9 @@ describe('Database', function () {
 
               d.find({}, function (err, docs) {
                 docs.sort(function (a, b) { return a.a - b.a; });
-                docs.length.should.equal(2);
-                _.isEqual(docs[0], { _id: doc1._id, a:1, hello: 'world' }).should.equal(true);
-                _.isEqual(docs[1], { _id: doc3._id, a:3, hello: 'moto' }).should.equal(true);
+                 expect(docs.length).to.equal(2);
+                 expect(_.isEqual(docs[0], { _id: doc1._id, a:1, hello: 'world' })).to.equal(true);
+                 expect(_.isEqual(docs[1], { _id: doc3._id, a:3, hello: 'moto' })).to.equal(true);
 
                 // Even after a reload the database state hasn't changed
                 d.loadDatabase(function (err) {
@@ -1823,9 +1823,9 @@ describe('Database', function () {
 
                   d.find({}, function (err, docs) {
                     docs.sort(function (a, b) { return a.a - b.a; });
-                    docs.length.should.equal(2);
-                    _.isEqual(docs[0], { _id: doc1._id, a:1, hello: 'world' }).should.equal(true);
-                    _.isEqual(docs[1], { _id: doc3._id, a:3, hello: 'moto' }).should.equal(true);
+                     expect(docs.length).to.equal(2);
+                     expect(_.isEqual(docs[0], { _id: doc1._id, a:1, hello: 'world' })).to.equal(true);
+                     expect(_.isEqual(docs[1], { _id: doc3._id, a:3, hello: 'moto' })).to.equal(true);
 
                     done();
                   });
@@ -1845,16 +1845,16 @@ describe('Database', function () {
               assert.isNull(err);
 
               d.find({}, function (err, docs) {
-                docs.length.should.equal(1);
-                _.isEqual(docs[0], { _id: doc2._id, a:2, hello: 'earth' }).should.equal(true);
+                 expect(docs.length).to.equal(1);
+                 expect(_.isEqual(docs[0], { _id: doc2._id, a:2, hello: 'earth' })).to.equal(true);
 
                 // Even after a reload the database state hasn't changed
                 d.loadDatabase(function (err) {
                   assert.isNull(err);
 
                   d.find({}, function (err, docs) {
-                    docs.length.should.equal(1);
-                    _.isEqual(docs[0], { _id: doc2._id, a:2, hello: 'earth' }).should.equal(true);
+                     expect(docs.length).to.equal(1);
+                     expect(_.isEqual(docs[0], { _id: doc2._id, a:2, hello: 'earth' })).to.equal(true);
 
                     done();
                   });
@@ -1872,16 +1872,16 @@ describe('Database', function () {
           d.insert({ a:5, hello: 'pluton' }, function (err, doc3) {
             d.remove({ a: 2 }, function (err, nr) {
               assert.isNull(err);
-              nr.should.equal(1);
+               expect(nr).to.equal(1);
               d.find({}, function (err, docs) {
                 var d1 = _.find(docs, function (doc) { return doc._id === doc1._id })
                   , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
                   , d3 = _.find(docs, function (doc) { return doc._id === doc3._id })
                   ;
-                  
-                d1.a.should.equal(1);
+                   
+                expect(d1.a).to.equal(1);
                 assert.isUndefined(d2);
-                d3.a.should.equal(5);
+                 expect(d3.a).to.equal(5);
                 
                 done();
               });
@@ -1900,27 +1900,27 @@ describe('Database', function () {
 
       it('ensureIndex can be called right after a loadDatabase and be initialized and filled correctly', function (done) {
         var now = new Date()
-          , rawData = model.serialize({ _id: "aaa", z: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
-                      model.serialize({ _id: "bbb", z: "2", hello: 'world' }) + '\n' +
-                      model.serialize({ _id: "ccc", z: "3", nested: { today: now } })
+          , rawData = serialize({ _id: "aaa", z: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+                      serialize({ _id: "bbb", z: "2", hello: 'world' }) + '\n' +
+                      serialize({ _id: "ccc", z: "3", nested: { today: now } })
           ;
-
-        d.getAllData().length.should.equal(0);
+ 
+        expect(d.getAllData().length).to.equal(0);
 
         fs.writeFile(testDb, rawData, 'utf8', function () {
           d.loadDatabase(function () {
-            d.getAllData().length.should.equal(3);
+             expect(d.getAllData().length).to.equal(3);
 
             assert.deepEqual(Object.keys(d.indexes), ['_id']);
 
             d.ensureIndex({ fieldName: 'z' });
-            d.indexes.z.fieldName.should.equal('z');
-            d.indexes.z.unique.should.equal(false);
-            d.indexes.z.sparse.should.equal(false);
-            d.indexes.z.tree.getNumberOfKeys().should.equal(3);
-            d.indexes.z.tree.search('1')[0].should.equal(d.getAllData()[0]);
-            d.indexes.z.tree.search('2')[0].should.equal(d.getAllData()[1]);
-            d.indexes.z.tree.search('3')[0].should.equal(d.getAllData()[2]);
+             expect(d.indexes.z.fieldName).to.equal('z');
+             expect(d.indexes.z.unique).to.equal(false);
+             expect(d.indexes.z.sparse).to.equal(false);
+             expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(3);
+             expect(d.indexes.z.tree.search('1')[0]).to.equal(d.getAllData()[0]);
+             expect(d.indexes.z.tree.search('2')[0]).to.equal(d.getAllData()[1]);
+             expect(d.indexes.z.tree.search('3')[0]).to.equal(d.getAllData()[2]);
 
             done();
           });
@@ -1928,30 +1928,30 @@ describe('Database', function () {
       });
       
       it('ensureIndex can be called twice on the same field, the second call will ahve no effect', function (done) {
-        Object.keys(d.indexes).length.should.equal(1);
-        Object.keys(d.indexes)[0].should.equal("_id");
+         expect(Object.keys(d.indexes).length).to.equal(1);
+         expect(Object.keys(d.indexes)[0]).to.equal("_id");
       
         d.insert({ planet: "Earth" }, function () {
           d.insert({ planet: "Mars" }, function () {
             d.find({}, function (err, docs) {
-              docs.length.should.equal(2);
+               expect(docs.length).to.equal(2);
               
               d.ensureIndex({ fieldName: "planet" }, function (err) {
                 assert.isNull(err);
-                Object.keys(d.indexes).length.should.equal(2);
-                Object.keys(d.indexes)[0].should.equal("_id");   
-                Object.keys(d.indexes)[1].should.equal("planet");   
-
-                d.indexes.planet.getAll().length.should.equal(2);
+                 expect(Object.keys(d.indexes).length).to.equal(2);
+                 expect(Object.keys(d.indexes)[0]).to.equal("_id");   
+                 expect(Object.keys(d.indexes)[1]).to.equal("planet");   
+ 
+                expect(d.indexes.planet.getAll().length).to.equal(2);
                 
                 // This second call has no effect, documents don't get inserted twice in the index
                 d.ensureIndex({ fieldName: "planet" }, function (err) {
                   assert.isNull(err);
-                  Object.keys(d.indexes).length.should.equal(2);
-                  Object.keys(d.indexes)[0].should.equal("_id");   
-                  Object.keys(d.indexes)[1].should.equal("planet");   
-
-                  d.indexes.planet.getAll().length.should.equal(2);                
+                   expect(Object.keys(d.indexes).length).to.equal(2);
+                   expect(Object.keys(d.indexes)[0]).to.equal("_id");   
+                   expect(Object.keys(d.indexes)[1]).to.equal("planet");   
+ 
+                  expect(d.indexes.planet.getAll().length).to.equal(2);                
                   
                   done();
                 });
@@ -1962,15 +1962,15 @@ describe('Database', function () {
       });
 
       it('ensureIndex can be called after the data set was modified and the index still be correct', function (done) {
-        var rawData = model.serialize({ _id: "aaa", z: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
-                      model.serialize({ _id: "bbb", z: "2", hello: 'world' })
+        var rawData = serialize({ _id: "aaa", z: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+                      serialize({ _id: "bbb", z: "2", hello: 'world' })
           ;
-
-        d.getAllData().length.should.equal(0);
+ 
+        expect(d.getAllData().length).to.equal(0);
 
         fs.writeFile(testDb, rawData, 'utf8', function () {
           d.loadDatabase(function () {
-            d.getAllData().length.should.equal(2);
+             expect(d.getAllData().length).to.equal(2);
 
             assert.deepEqual(Object.keys(d.indexes), ['_id']);
 
@@ -1981,15 +1981,15 @@ describe('Database', function () {
                     assert.deepEqual(Object.keys(d.indexes), ['_id']);
 
                     d.ensureIndex({ fieldName: 'z' });
-                    d.indexes.z.fieldName.should.equal('z');
-                    d.indexes.z.unique.should.equal(false);
-                    d.indexes.z.sparse.should.equal(false);
-                    d.indexes.z.tree.getNumberOfKeys().should.equal(3);
+                     expect(d.indexes.z.fieldName).to.equal('z');
+                     expect(d.indexes.z.unique).to.equal(false);
+                     expect(d.indexes.z.sparse).to.equal(false);
+                     expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(3);
 
                     // The pointers in the _id and z indexes are the same
-                    d.indexes.z.tree.search('1')[0].should.equal(d.indexes._id.getMatching('aaa')[0]);
-                    d.indexes.z.tree.search('12')[0].should.equal(d.indexes._id.getMatching(newDoc1._id)[0]);
-                    d.indexes.z.tree.search('14')[0].should.equal(d.indexes._id.getMatching(newDoc2._id)[0]);
+                     expect(d.indexes.z.tree.search('1')[0]).to.equal(d.indexes._id.getMatching('aaa')[0]);
+                     expect(d.indexes.z.tree.search('12')[0]).to.equal(d.indexes._id.getMatching(newDoc1._id)[0]);
+                     expect(d.indexes.z.tree.search('14')[0]).to.equal(d.indexes._id.getMatching(newDoc2._id)[0]);
 
                     // The data in the z index is correct
                     d.find({}, function (err, docs) {
@@ -1997,8 +1997,8 @@ describe('Database', function () {
                         , doc1 = _.find(docs, function (doc) { return doc._id === newDoc1._id; })
                         , doc2 = _.find(docs, function (doc) { return doc._id === newDoc2._id; })
                         ;
-
-                      docs.length.should.equal(3);
+ 
+                      expect(docs.length).to.equal(3);
 
                       assert.deepEqual(doc0, { _id: "aaa", z: "1", a: 2, ages: [1, 5, 12], yes: 'yep' });
                       assert.deepEqual(doc1, { _id: newDoc1._id, z: "12", yes: 'yes' });
@@ -2016,18 +2016,18 @@ describe('Database', function () {
 
       it('ensureIndex can be called before a loadDatabase and still be initialized and filled correctly', function (done) {
         var now = new Date()
-          , rawData = model.serialize({ _id: "aaa", z: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
-                      model.serialize({ _id: "bbb", z: "2", hello: 'world' }) + '\n' +
-                      model.serialize({ _id: "ccc", z: "3", nested: { today: now } })
+          , rawData = serialize({ _id: "aaa", z: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+                      serialize({ _id: "bbb", z: "2", hello: 'world' }) + '\n' +
+                      serialize({ _id: "ccc", z: "3", nested: { today: now } })
           ;
-
-        d.getAllData().length.should.equal(0);
+ 
+        expect(d.getAllData().length).to.equal(0);
 
         d.ensureIndex({ fieldName: 'z' });
-        d.indexes.z.fieldName.should.equal('z');
-        d.indexes.z.unique.should.equal(false);
-        d.indexes.z.sparse.should.equal(false);
-        d.indexes.z.tree.getNumberOfKeys().should.equal(0);
+         expect(d.indexes.z.fieldName).to.equal('z');
+         expect(d.indexes.z.unique).to.equal(false);
+         expect(d.indexes.z.sparse).to.equal(false);
+         expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(0);
 
         fs.writeFile(testDb, rawData, 'utf8', function () {
           d.loadDatabase(function () {
@@ -2035,13 +2035,13 @@ describe('Database', function () {
               , doc2 = _.find(d.getAllData(), function (doc) { return doc.z === "2"; })
               , doc3 = _.find(d.getAllData(), function (doc) { return doc.z === "3"; })
               ;
-
-            d.getAllData().length.should.equal(3);
-
-            d.indexes.z.tree.getNumberOfKeys().should.equal(3);
-            d.indexes.z.tree.search('1')[0].should.equal(doc1);
-            d.indexes.z.tree.search('2')[0].should.equal(doc2);
-            d.indexes.z.tree.search('3')[0].should.equal(doc3);
+ 
+            expect(d.getAllData().length).to.equal(3);
+ 
+            expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(3);
+             expect(d.indexes.z.tree.search('1')[0]).to.equal(doc1);
+             expect(d.indexes.z.tree.search('2')[0]).to.equal(doc2);
+             expect(d.indexes.z.tree.search('3')[0]).to.equal(doc3);
 
             done();
           });
@@ -2050,16 +2050,16 @@ describe('Database', function () {
 
       it('Can initialize multiple indexes on a database load', function (done) {
         var now = new Date()
-          , rawData = model.serialize({ _id: "aaa", z: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
-                      model.serialize({ _id: "bbb", z: "2", a: 'world' }) + '\n' +
-                      model.serialize({ _id: "ccc", z: "3", a: { today: now } })
+          , rawData = serialize({ _id: "aaa", z: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+                      serialize({ _id: "bbb", z: "2", a: 'world' }) + '\n' +
+                      serialize({ _id: "ccc", z: "3", a: { today: now } })
           ;
-
-        d.getAllData().length.should.equal(0);
+ 
+        expect(d.getAllData().length).to.equal(0);
         d.ensureIndex({ fieldName: 'z' }, function () {
           d.ensureIndex({ fieldName: 'a' }, function () {
-            d.indexes.a.tree.getNumberOfKeys().should.equal(0);
-            d.indexes.z.tree.getNumberOfKeys().should.equal(0);
+             expect(d.indexes.a.tree.getNumberOfKeys()).to.equal(0);
+             expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(0);
 
             fs.writeFile(testDb, rawData, 'utf8', function () {
               d.loadDatabase(function (err) {
@@ -2069,17 +2069,17 @@ describe('Database', function () {
                   ;
 
                 assert.isNull(err);
-                d.getAllData().length.should.equal(3);
-
-                d.indexes.z.tree.getNumberOfKeys().should.equal(3);
-                d.indexes.z.tree.search('1')[0].should.equal(doc1);
-                d.indexes.z.tree.search('2')[0].should.equal(doc2);
-                d.indexes.z.tree.search('3')[0].should.equal(doc3);
-
-                d.indexes.a.tree.getNumberOfKeys().should.equal(3);
-                d.indexes.a.tree.search(2)[0].should.equal(doc1);
-                d.indexes.a.tree.search('world')[0].should.equal(doc2);
-                d.indexes.a.tree.search({ today: now })[0].should.equal(doc3);
+                 expect(d.getAllData().length).to.equal(3);
+ 
+                expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(3);
+                 expect(d.indexes.z.tree.search('1')[0]).to.equal(doc1);
+                 expect(d.indexes.z.tree.search('2')[0]).to.equal(doc2);
+                 expect(d.indexes.z.tree.search('3')[0]).to.equal(doc3);
+ 
+                expect(d.indexes.a.tree.getNumberOfKeys()).to.equal(3);
+                 expect(d.indexes.a.tree.search(2)[0]).to.equal(doc1);
+                 expect(d.indexes.a.tree.search('world')[0]).to.equal(doc2);
+                 expect(d.indexes.a.tree.search({ today: now })[0]).to.equal(doc3);
 
                 done();
               });
@@ -2091,22 +2091,22 @@ describe('Database', function () {
 
       it('If a unique constraint is not respected, database loading will not work and no data will be inserted', function (done) {
         var now = new Date()
-          , rawData = model.serialize({ _id: "aaa", z: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
-                      model.serialize({ _id: "bbb", z: "2", a: 'world' }) + '\n' +
-                      model.serialize({ _id: "ccc", z: "1", a: { today: now } })
+          , rawData = serialize({ _id: "aaa", z: "1", a: 2, ages: [1, 5, 12] }) + '\n' +
+                      serialize({ _id: "bbb", z: "2", a: 'world' }) + '\n' +
+                      serialize({ _id: "ccc", z: "1", a: { today: now } })
           ;
-
-        d.getAllData().length.should.equal(0);
+ 
+        expect(d.getAllData().length).to.equal(0);
 
         d.ensureIndex({ fieldName: 'z', unique: true });
-        d.indexes.z.tree.getNumberOfKeys().should.equal(0);
+         expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(0);
 
         fs.writeFile(testDb, rawData, 'utf8', function () {
           d.loadDatabase(function (err) {
-            err.errorType.should.equal('uniqueViolated');
-            err.key.should.equal("1");
-            d.getAllData().length.should.equal(0);
-            d.indexes.z.tree.getNumberOfKeys().should.equal(0);
+             expect(err.errorType).to.equal('uniqueViolated');
+             expect(err.key).to.equal("1");
+             expect(d.getAllData().length).to.equal(0);
+             expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(0);
 
             done();
           });
@@ -2121,7 +2121,7 @@ describe('Database', function () {
                 assert.isNull(err);
 
                 d.ensureIndex({ fieldName: 'a', unique: true }, function (err) {
-                  err.errorType.should.equal('uniqueViolated');
+                   expect(err.errorType).to.equal('uniqueViolated');
                   assert.deepEqual(Object.keys(d.indexes), ['_id', 'b']);
 
                   done();
@@ -2135,13 +2135,13 @@ describe('Database', function () {
       it('Can remove an index', function (done) {
         d.ensureIndex({ fieldName: 'e' }, function (err) {
           assert.isNull(err);
-          
-          Object.keys(d.indexes).length.should.equal(2);
+           
+          expect(Object.keys(d.indexes).length).to.equal(2);
           assert.isNotNull(d.indexes.e);
           
           d.removeIndex("e", function (err) {
             assert.isNull(err);
-            Object.keys(d.indexes).length.should.equal(1);
+             expect(Object.keys(d.indexes).length).to.equal(1);
             assert.isUndefined(d.indexes.e); 
  
             done();
@@ -2156,14 +2156,14 @@ describe('Database', function () {
 
       it('Newly inserted documents are indexed', function (done) {
         d.ensureIndex({ fieldName: 'z' });
-        d.indexes.z.tree.getNumberOfKeys().should.equal(0);
+         expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(0);
 
         d.insert({ a: 2, z: 'yes' }, function (err, newDoc) {
-          d.indexes.z.tree.getNumberOfKeys().should.equal(1);
+           expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(1);
           assert.deepEqual(d.indexes.z.getMatching('yes'), [newDoc]);
 
           d.insert({ a: 5, z: 'nope' }, function (err, newDoc) {
-            d.indexes.z.tree.getNumberOfKeys().should.equal(2);
+             expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(2);
             assert.deepEqual(d.indexes.z.getMatching('nope'), [newDoc]);
 
             done();
@@ -2174,17 +2174,17 @@ describe('Database', function () {
       it('If multiple indexes are defined, the document is inserted in all of them', function (done) {
         d.ensureIndex({ fieldName: 'z' });
         d.ensureIndex({ fieldName: 'ya' });
-        d.indexes.z.tree.getNumberOfKeys().should.equal(0);
+         expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(0);
 
         d.insert({ a: 2, z: 'yes', ya: 'indeed' }, function (err, newDoc) {
-          d.indexes.z.tree.getNumberOfKeys().should.equal(1);
-          d.indexes.ya.tree.getNumberOfKeys().should.equal(1);
+           expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(1);
+           expect(d.indexes.ya.tree.getNumberOfKeys()).to.equal(1);
           assert.deepEqual(d.indexes.z.getMatching('yes'), [newDoc]);
           assert.deepEqual(d.indexes.ya.getMatching('indeed'), [newDoc]);
 
           d.insert({ a: 5, z: 'nope', ya: 'sure' }, function (err, newDoc2) {
-            d.indexes.z.tree.getNumberOfKeys().should.equal(2);
-            d.indexes.ya.tree.getNumberOfKeys().should.equal(2);
+             expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(2);
+             expect(d.indexes.ya.tree.getNumberOfKeys()).to.equal(2);
             assert.deepEqual(d.indexes.z.getMatching('nope'), [newDoc2]);
             assert.deepEqual(d.indexes.ya.getMatching('sure'), [newDoc2]);
 
@@ -2195,14 +2195,14 @@ describe('Database', function () {
 
       it('Can insert two docs at the same key for a non unique index', function (done) {
         d.ensureIndex({ fieldName: 'z' });
-        d.indexes.z.tree.getNumberOfKeys().should.equal(0);
+         expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(0);
 
         d.insert({ a: 2, z: 'yes' }, function (err, newDoc) {
-          d.indexes.z.tree.getNumberOfKeys().should.equal(1);
+           expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(1);
           assert.deepEqual(d.indexes.z.getMatching('yes'), [newDoc]);
 
           d.insert({ a: 5, z: 'yes' }, function (err, newDoc2) {
-            d.indexes.z.tree.getNumberOfKeys().should.equal(1);
+             expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(1);
             assert.deepEqual(d.indexes.z.getMatching('yes'), [newDoc, newDoc2]);
 
             done();
@@ -2212,24 +2212,24 @@ describe('Database', function () {
 
       it('If the index has a unique constraint, an error is thrown if it is violated and the data is not modified', function (done) {
         d.ensureIndex({ fieldName: 'z', unique: true });
-        d.indexes.z.tree.getNumberOfKeys().should.equal(0);
+         expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(0);
 
         d.insert({ a: 2, z: 'yes' }, function (err, newDoc) {
-          d.indexes.z.tree.getNumberOfKeys().should.equal(1);
+           expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(1);
           assert.deepEqual(d.indexes.z.getMatching('yes'), [newDoc]);
 
           d.insert({ a: 5, z: 'yes' }, function (err) {
-            err.errorType.should.equal('uniqueViolated');
-            err.key.should.equal('yes');
+             expect(err.errorType).to.equal('uniqueViolated');
+             expect(err.key).to.equal('yes');
 
             // Index didn't change
-            d.indexes.z.tree.getNumberOfKeys().should.equal(1);
+             expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(1);
             assert.deepEqual(d.indexes.z.getMatching('yes'), [newDoc]);
 
             // Data didn't change
             assert.deepEqual(d.getAllData(), [newDoc]);
             d.loadDatabase(function () {
-              d.getAllData().length.should.equal(1);
+               expect(d.getAllData().length).to.equal(1);
               assert.deepEqual(d.getAllData()[0], newDoc);
 
               done();
@@ -2245,17 +2245,17 @@ describe('Database', function () {
 
         d.insert({ nonu1: 'yes', nonu2: 'yes2', uni: 'willfail' }, function (err, newDoc) {
           assert.isNull(err);
-          d.indexes.nonu1.tree.getNumberOfKeys().should.equal(1);
-          d.indexes.uni.tree.getNumberOfKeys().should.equal(1);
-          d.indexes.nonu2.tree.getNumberOfKeys().should.equal(1);
+           expect(d.indexes.nonu1.tree.getNumberOfKeys()).to.equal(1);
+           expect(d.indexes.uni.tree.getNumberOfKeys()).to.equal(1);
+           expect(d.indexes.nonu2.tree.getNumberOfKeys()).to.equal(1);
 
           d.insert({ nonu1: 'no', nonu2: 'no2', uni: 'willfail' }, function (err) {
-            err.errorType.should.equal('uniqueViolated');
+             expect(err.errorType).to.equal('uniqueViolated');
 
             // No index was modified
-            d.indexes.nonu1.tree.getNumberOfKeys().should.equal(1);
-            d.indexes.uni.tree.getNumberOfKeys().should.equal(1);
-            d.indexes.nonu2.tree.getNumberOfKeys().should.equal(1);
+             expect(d.indexes.nonu1.tree.getNumberOfKeys()).to.equal(1);
+             expect(d.indexes.uni.tree.getNumberOfKeys()).to.equal(1);
+             expect(d.indexes.nonu2.tree.getNumberOfKeys()).to.equal(1);
 
             assert.deepEqual(d.indexes.nonu1.getMatching('yes'), [newDoc]);
             assert.deepEqual(d.indexes.uni.getMatching('willfail'), [newDoc]);
@@ -2268,22 +2268,22 @@ describe('Database', function () {
 
       it('Unique indexes prevent you from inserting two docs where the field is undefined except if theyre sparse', function (done) {
         d.ensureIndex({ fieldName: 'zzz', unique: true });
-        d.indexes.zzz.tree.getNumberOfKeys().should.equal(0);
+         expect(d.indexes.zzz.tree.getNumberOfKeys()).to.equal(0);
 
         d.insert({ a: 2, z: 'yes' }, function (err, newDoc) {
-          d.indexes.zzz.tree.getNumberOfKeys().should.equal(1);
+           expect(d.indexes.zzz.tree.getNumberOfKeys()).to.equal(1);
           assert.deepEqual(d.indexes.zzz.getMatching(undefined), [newDoc]);
 
           d.insert({ a: 5, z: 'other' }, function (err) {
-            err.errorType.should.equal('uniqueViolated');
+             expect(err.errorType).to.equal('uniqueViolated');
             assert.isUndefined(err.key);
 
             d.ensureIndex({ fieldName: 'yyy', unique: true, sparse: true });
 
             d.insert({ a: 5, z: 'other', zzz: 'set' }, function (err) {
               assert.isNull(err);
-              d.indexes.yyy.getAll().length.should.equal(0);   // Nothing indexed
-              d.indexes.zzz.getAll().length.should.equal(2);
+               expect(d.indexes.yyy.getAll().length).to.equal(0);   // Nothing indexed
+               expect(d.indexes.zzz.getAll().length).to.equal(2);
 
               done();
             });
@@ -2313,16 +2313,16 @@ describe('Database', function () {
         d.insert({ a: 1, b: 'hello' }, function (err, doc1) {
           d.insert({ a: 2, b: 'si' }, function (err, doc2) {
             d.find({}, function (err, docs) {
-              docs.length.should.equal(2);
-              d.getAllData().length.should.equal(2);
-
-              d.indexes._id.getMatching(doc1._id).length.should.equal(1);
-              d.indexes.a.getMatching(1).length.should.equal(1);
-              d.indexes._id.getMatching(doc1._id)[0].should.equal(d.indexes.a.getMatching(1)[0]);
-
-              d.indexes._id.getMatching(doc2._id).length.should.equal(1);
-              d.indexes.a.getMatching(2).length.should.equal(1);
-              d.indexes._id.getMatching(doc2._id)[0].should.equal(d.indexes.a.getMatching(2)[0]);
+               expect(docs.length).to.equal(2);
+               expect(d.getAllData().length).to.equal(2);
+ 
+              expect(d.indexes._id.getMatching(doc1._id).length).to.equal(1);
+               expect(d.indexes.a.getMatching(1).length).to.equal(1);
+               expect(d.indexes._id.getMatching(doc1._id)[0]).to.equal(d.indexes.a.getMatching(1)[0]);
+ 
+              expect(d.indexes._id.getMatching(doc2._id).length).to.equal(1);
+               expect(d.indexes.a.getMatching(2).length).to.equal(1);
+               expect(d.indexes._id.getMatching(doc2._id)[0]).to.equal(d.indexes.a.getMatching(2)[0]);
 
               done();
             });
@@ -2338,14 +2338,14 @@ describe('Database', function () {
             assert.isDefined(err);
 
             d.find({}, function (err, docs) {
-              docs.length.should.equal(1);
-              d.getAllData().length.should.equal(1);
-
-              d.indexes._id.getMatching(doc1._id).length.should.equal(1);
-              d.indexes.a.getMatching(1).length.should.equal(1);
-              d.indexes._id.getMatching(doc1._id)[0].should.equal(d.indexes.a.getMatching(1)[0]);
-
-              d.indexes.a.getMatching(2).length.should.equal(0);
+               expect(docs.length).to.equal(1);
+               expect(d.getAllData().length).to.equal(1);
+ 
+              expect(d.indexes._id.getMatching(doc1._id).length).to.equal(1);
+               expect(d.indexes.a.getMatching(1).length).to.equal(1);
+               expect(d.indexes._id.getMatching(doc1._id)[0]).to.equal(d.indexes.a.getMatching(1)[0]);
+ 
+              expect(d.indexes.a.getMatching(2).length).to.equal(0);
 
               done();
             });
@@ -2369,9 +2369,9 @@ describe('Database', function () {
                 ;
 
               assert.isNull(err);
-              nr.should.equal(1);
-
-              data.length.should.equal(2);
+               expect(nr).to.equal(1);
+ 
+              expect(data.length).to.equal(2);
               assert.deepEqual(doc1, { a: 456, b: 'no', _id: _doc1._id });
               assert.deepEqual(doc2, { a: 2, b: 'si', _id: _doc2._id });
 
@@ -2382,9 +2382,9 @@ describe('Database', function () {
                   ;
 
                 assert.isNull(err);
-                nr.should.equal(2);
-
-                data.length.should.equal(2);
+                 expect(nr).to.equal(2);
+ 
+                expect(data.length).to.equal(2);
                 assert.deepEqual(doc1, { a: 466, b: 'same', _id: _doc1._id });
                 assert.deepEqual(doc2, { a: 12, b: 'same', _id: _doc2._id });
 
@@ -2404,46 +2404,46 @@ describe('Database', function () {
             // Simple update
             d.update({ a: 1 }, { $set: { a: 456, b: 'no' } }, {}, function (err, nr) {
               assert.isNull(err);
-              nr.should.equal(1);
-
-              d.indexes.a.tree.getNumberOfKeys().should.equal(2);
-              d.indexes.a.getMatching(456)[0]._id.should.equal(doc1._id);
-              d.indexes.a.getMatching(2)[0]._id.should.equal(doc2._id);
-
-              d.indexes.b.tree.getNumberOfKeys().should.equal(2);
-              d.indexes.b.getMatching('no')[0]._id.should.equal(doc1._id);
-              d.indexes.b.getMatching('si')[0]._id.should.equal(doc2._id);
+               expect(nr).to.equal(1);
+ 
+              expect(d.indexes.a.tree.getNumberOfKeys()).to.equal(2);
+               expect(d.indexes.a.getMatching(456)[0]._id).to.equal(doc1._id);
+               expect(d.indexes.a.getMatching(2)[0]._id).to.equal(doc2._id);
+ 
+              expect(d.indexes.b.tree.getNumberOfKeys()).to.equal(2);
+               expect(d.indexes.b.getMatching('no')[0]._id).to.equal(doc1._id);
+               expect(d.indexes.b.getMatching('si')[0]._id).to.equal(doc2._id);
 
               // The same pointers are shared between all indexes
-              d.indexes.a.tree.getNumberOfKeys().should.equal(2);
-              d.indexes.b.tree.getNumberOfKeys().should.equal(2);
-              d.indexes._id.tree.getNumberOfKeys().should.equal(2);
-              d.indexes.a.getMatching(456)[0].should.equal(d.indexes._id.getMatching(doc1._id)[0]);
-              d.indexes.b.getMatching('no')[0].should.equal(d.indexes._id.getMatching(doc1._id)[0]);
-              d.indexes.a.getMatching(2)[0].should.equal(d.indexes._id.getMatching(doc2._id)[0]);
-              d.indexes.b.getMatching('si')[0].should.equal(d.indexes._id.getMatching(doc2._id)[0]);
+               expect(d.indexes.a.tree.getNumberOfKeys()).to.equal(2);
+               expect(d.indexes.b.tree.getNumberOfKeys()).to.equal(2);
+               expect(d.indexes._id.tree.getNumberOfKeys()).to.equal(2);
+               expect(d.indexes.a.getMatching(456)[0]).to.equal(d.indexes._id.getMatching(doc1._id)[0]);
+               expect(d.indexes.b.getMatching('no')[0]).to.equal(d.indexes._id.getMatching(doc1._id)[0]);
+               expect(d.indexes.a.getMatching(2)[0]).to.equal(d.indexes._id.getMatching(doc2._id)[0]);
+               expect(d.indexes.b.getMatching('si')[0]).to.equal(d.indexes._id.getMatching(doc2._id)[0]);
 
               // Multi update
               d.update({}, { $inc: { a: 10 }, $set: { b: 'same' } }, { multi: true }, function (err, nr) {
                 assert.isNull(err);
-                nr.should.equal(2);
-
-                d.indexes.a.tree.getNumberOfKeys().should.equal(2);
-                d.indexes.a.getMatching(466)[0]._id.should.equal(doc1._id);
-                d.indexes.a.getMatching(12)[0]._id.should.equal(doc2._id);
-
-                d.indexes.b.tree.getNumberOfKeys().should.equal(1);
-                d.indexes.b.getMatching('same').length.should.equal(2);
+                 expect(nr).to.equal(2);
+ 
+                expect(d.indexes.a.tree.getNumberOfKeys()).to.equal(2);
+                 expect(d.indexes.a.getMatching(466)[0]._id).to.equal(doc1._id);
+                 expect(d.indexes.a.getMatching(12)[0]._id).to.equal(doc2._id);
+ 
+                expect(d.indexes.b.tree.getNumberOfKeys()).to.equal(1);
+                 expect(d.indexes.b.getMatching('same').length).to.equal(2);
                 _.pluck(d.indexes.b.getMatching('same'), '_id').should.contain(doc1._id);
                 _.pluck(d.indexes.b.getMatching('same'), '_id').should.contain(doc2._id);
 
                 // The same pointers are shared between all indexes
-                d.indexes.a.tree.getNumberOfKeys().should.equal(2);
-                d.indexes.b.tree.getNumberOfKeys().should.equal(1);
-                d.indexes.b.getAll().length.should.equal(2);
-                d.indexes._id.tree.getNumberOfKeys().should.equal(2);
-                d.indexes.a.getMatching(466)[0].should.equal(d.indexes._id.getMatching(doc1._id)[0]);
-                d.indexes.a.getMatching(12)[0].should.equal(d.indexes._id.getMatching(doc2._id)[0]);
+                 expect(d.indexes.a.tree.getNumberOfKeys()).to.equal(2);
+                 expect(d.indexes.b.tree.getNumberOfKeys()).to.equal(1);
+                 expect(d.indexes.b.getAll().length).to.equal(2);
+                 expect(d.indexes._id.tree.getNumberOfKeys()).to.equal(2);
+                 expect(d.indexes.a.getMatching(466)[0]).to.equal(d.indexes._id.getMatching(doc1._id)[0]);
+                 expect(d.indexes.a.getMatching(12)[0]).to.equal(d.indexes._id.getMatching(doc2._id)[0]);
                 // Can't test the pointers in b as their order is randomized, but it is the same as with a
 
                 done();
@@ -2468,30 +2468,30 @@ describe('Database', function () {
                   , doc2 = _.find(data, function (doc) { return doc._id === _doc2._id; })
                   , doc3 = _.find(data, function (doc) { return doc._id === _doc3._id; })
                   ;
-
-                err.errorType.should.equal('uniqueViolated');
+ 
+                expect(err.errorType).to.equal('uniqueViolated');
 
                 // Data left unchanged
-                data.length.should.equal(3);
+                 expect(data.length).to.equal(3);
                 assert.deepEqual(doc1, { a: 1, b: 10, c: 100, _id: _doc1._id });
                 assert.deepEqual(doc2, { a: 2, b: 20, c: 200, _id: _doc2._id });
                 assert.deepEqual(doc3, { a: 3, b: 30, c: 300, _id: _doc3._id });
 
                 // All indexes left unchanged and pointing to the same docs
-                d.indexes.a.tree.getNumberOfKeys().should.equal(3);
-                d.indexes.a.getMatching(1)[0].should.equal(doc1);
-                d.indexes.a.getMatching(2)[0].should.equal(doc2);
-                d.indexes.a.getMatching(3)[0].should.equal(doc3);
-
-                d.indexes.b.tree.getNumberOfKeys().should.equal(3);
-                d.indexes.b.getMatching(10)[0].should.equal(doc1);
-                d.indexes.b.getMatching(20)[0].should.equal(doc2);
-                d.indexes.b.getMatching(30)[0].should.equal(doc3);
-
-                d.indexes.c.tree.getNumberOfKeys().should.equal(3);
-                d.indexes.c.getMatching(100)[0].should.equal(doc1);
-                d.indexes.c.getMatching(200)[0].should.equal(doc2);
-                d.indexes.c.getMatching(300)[0].should.equal(doc3);
+                 expect(d.indexes.a.tree.getNumberOfKeys()).to.equal(3);
+                 expect(d.indexes.a.getMatching(1)[0]).to.equal(doc1);
+                 expect(d.indexes.a.getMatching(2)[0]).to.equal(doc2);
+                 expect(d.indexes.a.getMatching(3)[0]).to.equal(doc3);
+ 
+                expect(d.indexes.b.tree.getNumberOfKeys()).to.equal(3);
+                 expect(d.indexes.b.getMatching(10)[0]).to.equal(doc1);
+                 expect(d.indexes.b.getMatching(20)[0]).to.equal(doc2);
+                 expect(d.indexes.b.getMatching(30)[0]).to.equal(doc3);
+ 
+                expect(d.indexes.c.tree.getNumberOfKeys()).to.equal(3);
+                 expect(d.indexes.c.getMatching(100)[0]).to.equal(doc1);
+                 expect(d.indexes.c.getMatching(200)[0]).to.equal(doc2);
+                 expect(d.indexes.c.getMatching(300)[0]).to.equal(doc3);
 
                 done();
               });
@@ -2515,30 +2515,30 @@ describe('Database', function () {
                   , doc2 = _.find(data, function (doc) { return doc._id === _doc2._id; })
                   , doc3 = _.find(data, function (doc) { return doc._id === _doc3._id; })
                   ;
-
-                err.errorType.should.equal('uniqueViolated');
+ 
+                expect(err.errorType).to.equal('uniqueViolated');
 
                 // Data left unchanged
-                data.length.should.equal(3);
+                 expect(data.length).to.equal(3);
                 assert.deepEqual(doc1, { a: 1, b: 10, c: 100, _id: _doc1._id });
                 assert.deepEqual(doc2, { a: 2, b: 20, c: 200, _id: _doc2._id });
                 assert.deepEqual(doc3, { a: 3, b: 30, c: 300, _id: _doc3._id });
 
                 // All indexes left unchanged and pointing to the same docs
-                d.indexes.a.tree.getNumberOfKeys().should.equal(3);
-                d.indexes.a.getMatching(1)[0].should.equal(doc1);
-                d.indexes.a.getMatching(2)[0].should.equal(doc2);
-                d.indexes.a.getMatching(3)[0].should.equal(doc3);
-
-                d.indexes.b.tree.getNumberOfKeys().should.equal(3);
-                d.indexes.b.getMatching(10)[0].should.equal(doc1);
-                d.indexes.b.getMatching(20)[0].should.equal(doc2);
-                d.indexes.b.getMatching(30)[0].should.equal(doc3);
-
-                d.indexes.c.tree.getNumberOfKeys().should.equal(3);
-                d.indexes.c.getMatching(100)[0].should.equal(doc1);
-                d.indexes.c.getMatching(200)[0].should.equal(doc2);
-                d.indexes.c.getMatching(300)[0].should.equal(doc3);
+                 expect(d.indexes.a.tree.getNumberOfKeys()).to.equal(3);
+                 expect(d.indexes.a.getMatching(1)[0]).to.equal(doc1);
+                 expect(d.indexes.a.getMatching(2)[0]).to.equal(doc2);
+                 expect(d.indexes.a.getMatching(3)[0]).to.equal(doc3);
+ 
+                expect(d.indexes.b.tree.getNumberOfKeys()).to.equal(3);
+                 expect(d.indexes.b.getMatching(10)[0]).to.equal(doc1);
+                 expect(d.indexes.b.getMatching(20)[0]).to.equal(doc2);
+                 expect(d.indexes.b.getMatching(30)[0]).to.equal(doc3);
+ 
+                expect(d.indexes.c.tree.getNumberOfKeys()).to.equal(3);
+                 expect(d.indexes.c.getMatching(100)[0]).to.equal(doc1);
+                 expect(d.indexes.c.getMatching(200)[0]).to.equal(doc2);
+                 expect(d.indexes.c.getMatching(300)[0]).to.equal(doc3);
 
                 done();
               });
@@ -2564,9 +2564,9 @@ describe('Database', function () {
                 ;
 
                 assert.isNull(err);
-                nr.should.equal(1);
-
-                data.length.should.equal(2);
+                 expect(nr).to.equal(1);
+ 
+                expect(data.length).to.equal(2);
                 assert.deepEqual(doc2, { a: 2, b: 'si', _id: _doc2._id });
                 assert.deepEqual(doc3, { a: 3, b: 'coin', _id: _doc3._id });
 
@@ -2575,8 +2575,8 @@ describe('Database', function () {
                   ;
 
                   assert.isNull(err);
-                  nr.should.equal(2);
-                  data.length.should.equal(0);
+                   expect(nr).to.equal(2);
+                   expect(data.length).to.equal(0);
 
                   done();
                 });
@@ -2596,33 +2596,33 @@ describe('Database', function () {
               // Simple remove
               d.remove({ a: 1 }, {}, function (err, nr) {
                 assert.isNull(err);
-                nr.should.equal(1);
-
-                d.indexes.a.tree.getNumberOfKeys().should.equal(2);
-                d.indexes.a.getMatching(2)[0]._id.should.equal(doc2._id);
-                d.indexes.a.getMatching(3)[0]._id.should.equal(doc3._id);
-
-                d.indexes.b.tree.getNumberOfKeys().should.equal(2);
-                d.indexes.b.getMatching('si')[0]._id.should.equal(doc2._id);
-                d.indexes.b.getMatching('coin')[0]._id.should.equal(doc3._id);
+                 expect(nr).to.equal(1);
+ 
+                expect(d.indexes.a.tree.getNumberOfKeys()).to.equal(2);
+                 expect(d.indexes.a.getMatching(2)[0]._id).to.equal(doc2._id);
+                 expect(d.indexes.a.getMatching(3)[0]._id).to.equal(doc3._id);
+ 
+                expect(d.indexes.b.tree.getNumberOfKeys()).to.equal(2);
+                 expect(d.indexes.b.getMatching('si')[0]._id).to.equal(doc2._id);
+                 expect(d.indexes.b.getMatching('coin')[0]._id).to.equal(doc3._id);
 
                 // The same pointers are shared between all indexes
-                d.indexes.a.tree.getNumberOfKeys().should.equal(2);
-                d.indexes.b.tree.getNumberOfKeys().should.equal(2);
-                d.indexes._id.tree.getNumberOfKeys().should.equal(2);
-                d.indexes.a.getMatching(2)[0].should.equal(d.indexes._id.getMatching(doc2._id)[0]);
-                d.indexes.b.getMatching('si')[0].should.equal(d.indexes._id.getMatching(doc2._id)[0]);
-                d.indexes.a.getMatching(3)[0].should.equal(d.indexes._id.getMatching(doc3._id)[0]);
-                d.indexes.b.getMatching('coin')[0].should.equal(d.indexes._id.getMatching(doc3._id)[0]);
+                 expect(d.indexes.a.tree.getNumberOfKeys()).to.equal(2);
+                 expect(d.indexes.b.tree.getNumberOfKeys()).to.equal(2);
+                 expect(d.indexes._id.tree.getNumberOfKeys()).to.equal(2);
+                 expect(d.indexes.a.getMatching(2)[0]).to.equal(d.indexes._id.getMatching(doc2._id)[0]);
+                 expect(d.indexes.b.getMatching('si')[0]).to.equal(d.indexes._id.getMatching(doc2._id)[0]);
+                 expect(d.indexes.a.getMatching(3)[0]).to.equal(d.indexes._id.getMatching(doc3._id)[0]);
+                 expect(d.indexes.b.getMatching('coin')[0]).to.equal(d.indexes._id.getMatching(doc3._id)[0]);
 
                 // Multi remove
                 d.remove({}, { multi: true }, function (err, nr) {
                   assert.isNull(err);
-                  nr.should.equal(2);
-
-                  d.indexes.a.tree.getNumberOfKeys().should.equal(0);
-                  d.indexes.b.tree.getNumberOfKeys().should.equal(0);
-                  d.indexes._id.tree.getNumberOfKeys().should.equal(0);
+                   expect(nr).to.equal(2);
+ 
+                  expect(d.indexes.a.tree.getNumberOfKeys()).to.equal(0);
+                   expect(d.indexes.b.tree.getNumberOfKeys()).to.equal(0);
+                   expect(d.indexes._id.tree.getNumberOfKeys()).to.equal(0);
 
                   done();
                 });
@@ -2644,9 +2644,9 @@ describe('Database', function () {
 
         if (fs.existsSync(persDb)) { fs.writeFileSync(persDb, '', 'utf8'); }
         db = new Datastore({ filename: persDb, autoload: true });
-
-        Object.keys(db.indexes).length.should.equal(1);
-        Object.keys(db.indexes)[0].should.equal("_id");
+ 
+        expect(Object.keys(db.indexes).length).to.equal(1);
+         expect(Object.keys(db.indexes)[0]).to.equal("_id");
 
         db.insert({ planet: "Earth" }, function (err) {
           assert.isNull(err);
@@ -2654,34 +2654,34 @@ describe('Database', function () {
             assert.isNull(err);
 
             db.ensureIndex({ fieldName: "planet" }, function (err) {
-              Object.keys(db.indexes).length.should.equal(2);
-              Object.keys(db.indexes)[0].should.equal("_id");
-              Object.keys(db.indexes)[1].should.equal("planet");
-              db.indexes._id.getAll().length.should.equal(2);
-              db.indexes.planet.getAll().length.should.equal(2);
-              db.indexes.planet.fieldName.should.equal("planet");
+               expect(Object.keys(db.indexes).length).to.equal(2);
+               expect(Object.keys(db.indexes)[0]).to.equal("_id");
+               expect(Object.keys(db.indexes)[1]).to.equal("planet");
+               expect(db.indexes._id.getAll().length).to.equal(2);
+               expect(db.indexes.planet.getAll().length).to.equal(2);
+               expect(db.indexes.planet.fieldName).to.equal("planet");
 
               // After a reload the indexes are recreated
               db = new Datastore({ filename: persDb });
               db.loadDatabase(function (err) {
                 assert.isNull(err);
-                Object.keys(db.indexes).length.should.equal(2);
-                Object.keys(db.indexes)[0].should.equal("_id");
-                Object.keys(db.indexes)[1].should.equal("planet");
-                db.indexes._id.getAll().length.should.equal(2);
-                db.indexes.planet.getAll().length.should.equal(2);
-                db.indexes.planet.fieldName.should.equal("planet");
+                 expect(Object.keys(db.indexes).length).to.equal(2);
+                 expect(Object.keys(db.indexes)[0]).to.equal("_id");
+                 expect(Object.keys(db.indexes)[1]).to.equal("planet");
+                 expect(db.indexes._id.getAll().length).to.equal(2);
+                 expect(db.indexes.planet.getAll().length).to.equal(2);
+                 expect(db.indexes.planet.fieldName).to.equal("planet");
 
                 // After another reload the indexes are still there (i.e. they are preserved during autocompaction)
                 db = new Datastore({ filename: persDb });
                 db.loadDatabase(function (err) {
                   assert.isNull(err);
-                  Object.keys(db.indexes).length.should.equal(2);
-                  Object.keys(db.indexes)[0].should.equal("_id");
-                  Object.keys(db.indexes)[1].should.equal("planet");
-                  db.indexes._id.getAll().length.should.equal(2);
-                  db.indexes.planet.getAll().length.should.equal(2);
-                  db.indexes.planet.fieldName.should.equal("planet");
+                   expect(Object.keys(db.indexes).length).to.equal(2);
+                   expect(Object.keys(db.indexes)[0]).to.equal("_id");
+                   expect(Object.keys(db.indexes)[1]).to.equal("planet");
+                   expect(db.indexes._id.getAll().length).to.equal(2);
+                   expect(db.indexes.planet.getAll().length).to.equal(2);
+                   expect(db.indexes.planet.fieldName).to.equal("planet");
 
                   done();
                 });
@@ -2698,9 +2698,9 @@ describe('Database', function () {
 
         if (fs.existsSync(persDb)) { fs.writeFileSync(persDb, '', 'utf8'); }
         db = new Datastore({ filename: persDb, autoload: true });
-
-        Object.keys(db.indexes).length.should.equal(1);
-        Object.keys(db.indexes)[0].should.equal("_id");
+ 
+        expect(Object.keys(db.indexes).length).to.equal(1);
+         expect(Object.keys(db.indexes)[0]).to.equal("_id");
 
         db.insert({ planet: "Earth" }, function (err) {
           assert.isNull(err);
@@ -2708,13 +2708,13 @@ describe('Database', function () {
             assert.isNull(err);
 
             db.ensureIndex({ fieldName: "planet", unique: true, sparse: false }, function (err) {
-              Object.keys(db.indexes).length.should.equal(2);
-              Object.keys(db.indexes)[0].should.equal("_id");
-              Object.keys(db.indexes)[1].should.equal("planet");
-              db.indexes._id.getAll().length.should.equal(2);
-              db.indexes.planet.getAll().length.should.equal(2);
-              db.indexes.planet.unique.should.equal(true);
-              db.indexes.planet.sparse.should.equal(false);
+               expect(Object.keys(db.indexes).length).to.equal(2);
+               expect(Object.keys(db.indexes)[0]).to.equal("_id");
+               expect(Object.keys(db.indexes)[1]).to.equal("planet");
+               expect(db.indexes._id.getAll().length).to.equal(2);
+               expect(db.indexes.planet.getAll().length).to.equal(2);
+               expect(db.indexes.planet.unique).to.equal(true);
+               expect(db.indexes.planet.sparse).to.equal(false);
 
               db.insert({ planet: "Jupiter" }, function (err) {
                 assert.isNull(err);
@@ -2723,43 +2723,43 @@ describe('Database', function () {
                 db = new Datastore({ filename: persDb });
                 db.loadDatabase(function (err) {
                   assert.isNull(err);
-                  Object.keys(db.indexes).length.should.equal(2);
-                  Object.keys(db.indexes)[0].should.equal("_id");
-                  Object.keys(db.indexes)[1].should.equal("planet");
-                  db.indexes._id.getAll().length.should.equal(3);
-                  db.indexes.planet.getAll().length.should.equal(3);
-                  db.indexes.planet.unique.should.equal(true);
-                  db.indexes.planet.sparse.should.equal(false);
+                   expect(Object.keys(db.indexes).length).to.equal(2);
+                   expect(Object.keys(db.indexes)[0]).to.equal("_id");
+                   expect(Object.keys(db.indexes)[1]).to.equal("planet");
+                   expect(db.indexes._id.getAll().length).to.equal(3);
+                   expect(db.indexes.planet.getAll().length).to.equal(3);
+                   expect(db.indexes.planet.unique).to.equal(true);
+                   expect(db.indexes.planet.sparse).to.equal(false);
 
                   db.ensureIndex({ fieldName: 'bloup', unique: false, sparse: true }, function (err) {
                     assert.isNull(err);
-                    Object.keys(db.indexes).length.should.equal(3);
-                    Object.keys(db.indexes)[0].should.equal("_id");
-                    Object.keys(db.indexes)[1].should.equal("planet");
-                    Object.keys(db.indexes)[2].should.equal("bloup");
-                    db.indexes._id.getAll().length.should.equal(3);
-                    db.indexes.planet.getAll().length.should.equal(3);
-                    db.indexes.bloup.getAll().length.should.equal(0);
-                    db.indexes.planet.unique.should.equal(true);
-                    db.indexes.planet.sparse.should.equal(false);
-                    db.indexes.bloup.unique.should.equal(false);
-                    db.indexes.bloup.sparse.should.equal(true);
+                     expect(Object.keys(db.indexes).length).to.equal(3);
+                     expect(Object.keys(db.indexes)[0]).to.equal("_id");
+                     expect(Object.keys(db.indexes)[1]).to.equal("planet");
+                     expect(Object.keys(db.indexes)[2]).to.equal("bloup");
+                     expect(db.indexes._id.getAll().length).to.equal(3);
+                     expect(db.indexes.planet.getAll().length).to.equal(3);
+                     expect(db.indexes.bloup.getAll().length).to.equal(0);
+                     expect(db.indexes.planet.unique).to.equal(true);
+                     expect(db.indexes.planet.sparse).to.equal(false);
+                     expect(db.indexes.bloup.unique).to.equal(false);
+                     expect(db.indexes.bloup.sparse).to.equal(true);
 
                     // After another reload the indexes are still there (i.e. they are preserved during autocompaction)
                     db = new Datastore({ filename: persDb });
                     db.loadDatabase(function (err) {
                       assert.isNull(err);
-                      Object.keys(db.indexes).length.should.equal(3);
-                      Object.keys(db.indexes)[0].should.equal("_id");
-                      Object.keys(db.indexes)[1].should.equal("planet");
-                      Object.keys(db.indexes)[2].should.equal("bloup");
-                      db.indexes._id.getAll().length.should.equal(3);
-                      db.indexes.planet.getAll().length.should.equal(3);
-                      db.indexes.bloup.getAll().length.should.equal(0);
-                      db.indexes.planet.unique.should.equal(true);
-                      db.indexes.planet.sparse.should.equal(false);
-                      db.indexes.bloup.unique.should.equal(false);
-                      db.indexes.bloup.sparse.should.equal(true);
+                       expect(Object.keys(db.indexes).length).to.equal(3);
+                       expect(Object.keys(db.indexes)[0]).to.equal("_id");
+                       expect(Object.keys(db.indexes)[1]).to.equal("planet");
+                       expect(Object.keys(db.indexes)[2]).to.equal("bloup");
+                       expect(db.indexes._id.getAll().length).to.equal(3);
+                       expect(db.indexes.planet.getAll().length).to.equal(3);
+                       expect(db.indexes.bloup.getAll().length).to.equal(0);
+                       expect(db.indexes.planet.unique).to.equal(true);
+                       expect(db.indexes.planet.sparse).to.equal(false);
+                       expect(db.indexes.bloup.unique).to.equal(false);
+                       expect(db.indexes.bloup.sparse).to.equal(true);
 
                       done();
                     });
@@ -2778,9 +2778,9 @@ describe('Database', function () {
 
         if (fs.existsSync(persDb)) { fs.writeFileSync(persDb, '', 'utf8'); }
         db = new Datastore({ filename: persDb, autoload: true });
-
-        Object.keys(db.indexes).length.should.equal(1);
-        Object.keys(db.indexes)[0].should.equal("_id");
+ 
+        expect(Object.keys(db.indexes).length).to.equal(1);
+         expect(Object.keys(db.indexes)[0]).to.equal("_id");
 
         db.insert({ planet: "Earth" }, function (err) {
           assert.isNull(err);
@@ -2791,51 +2791,51 @@ describe('Database', function () {
               assert.isNull(err);
               db.ensureIndex({ fieldName: "another" }, function (err) {
                 assert.isNull(err);
-                Object.keys(db.indexes).length.should.equal(3);
-                Object.keys(db.indexes)[0].should.equal("_id");
-                Object.keys(db.indexes)[1].should.equal("planet");
-                Object.keys(db.indexes)[2].should.equal("another");
-                db.indexes._id.getAll().length.should.equal(2);
-                db.indexes.planet.getAll().length.should.equal(2);
-                db.indexes.planet.fieldName.should.equal("planet");
+                 expect(Object.keys(db.indexes).length).to.equal(3);
+                 expect(Object.keys(db.indexes)[0]).to.equal("_id");
+                 expect(Object.keys(db.indexes)[1]).to.equal("planet");
+                 expect(Object.keys(db.indexes)[2]).to.equal("another");
+                 expect(db.indexes._id.getAll().length).to.equal(2);
+                 expect(db.indexes.planet.getAll().length).to.equal(2);
+                 expect(db.indexes.planet.fieldName).to.equal("planet");
 
                 // After a reload the indexes are recreated
                 db = new Datastore({ filename: persDb });
                 db.loadDatabase(function (err) {
                   assert.isNull(err);
-                  Object.keys(db.indexes).length.should.equal(3);
-                  Object.keys(db.indexes)[0].should.equal("_id");
-                  Object.keys(db.indexes)[1].should.equal("planet");  
-                  Object.keys(db.indexes)[2].should.equal("another");
-                  db.indexes._id.getAll().length.should.equal(2);
-                  db.indexes.planet.getAll().length.should.equal(2);
-                  db.indexes.planet.fieldName.should.equal("planet");
+                   expect(Object.keys(db.indexes).length).to.equal(3);
+                   expect(Object.keys(db.indexes)[0]).to.equal("_id");
+                   expect(Object.keys(db.indexes)[1]).to.equal("planet");  
+                   expect(Object.keys(db.indexes)[2]).to.equal("another");
+                   expect(db.indexes._id.getAll().length).to.equal(2);
+                   expect(db.indexes.planet.getAll().length).to.equal(2);
+                   expect(db.indexes.planet.fieldName).to.equal("planet");
 
                   // Index is removed
                   db.removeIndex("planet", function (err) {
                     assert.isNull(err);
-                    Object.keys(db.indexes).length.should.equal(2);
-                    Object.keys(db.indexes)[0].should.equal("_id");
-                    Object.keys(db.indexes)[1].should.equal("another");
-                    db.indexes._id.getAll().length.should.equal(2);
+                     expect(Object.keys(db.indexes).length).to.equal(2);
+                     expect(Object.keys(db.indexes)[0]).to.equal("_id");
+                     expect(Object.keys(db.indexes)[1]).to.equal("another");
+                     expect(db.indexes._id.getAll().length).to.equal(2);
 
                     // After a reload indexes are preserved
                     db = new Datastore({ filename: persDb });
                     db.loadDatabase(function (err) {
                       assert.isNull(err);
-                      Object.keys(db.indexes).length.should.equal(2);
-                      Object.keys(db.indexes)[0].should.equal("_id");
-                      Object.keys(db.indexes)[1].should.equal("another");
-                      db.indexes._id.getAll().length.should.equal(2);
+                       expect(Object.keys(db.indexes).length).to.equal(2);
+                       expect(Object.keys(db.indexes)[0]).to.equal("_id");
+                       expect(Object.keys(db.indexes)[1]).to.equal("another");
+                       expect(db.indexes._id.getAll().length).to.equal(2);
 
                       // After another reload the indexes are still there (i.e. they are preserved during autocompaction)
                       db = new Datastore({ filename: persDb });
                       db.loadDatabase(function (err) {
                         assert.isNull(err);
-                        Object.keys(db.indexes).length.should.equal(2);
-                        Object.keys(db.indexes)[0].should.equal("_id");
-                        Object.keys(db.indexes)[1].should.equal("another");
-                        db.indexes._id.getAll().length.should.equal(2);
+                         expect(Object.keys(db.indexes).length).to.equal(2);
+                         expect(Object.keys(db.indexes)[0]).to.equal("_id");
+                         expect(Object.keys(db.indexes)[1]).to.equal("another");
+                         expect(db.indexes._id.getAll().length).to.equal(2);
 
                         done();
                       });
@@ -2854,7 +2854,7 @@ describe('Database', function () {
       d.ensureIndex({ fieldName: 'bad' });
       d.insert({ bad: ['a', 'b'] }, function () {
         d.getCandidates({ bad: { $in: ['a', 'b'] } }, function (err, res) {
-          res.length.should.equal(1);
+           expect(res.length).to.equal(1);
           done();
         });
       });
