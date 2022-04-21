@@ -1,5 +1,4 @@
 import fs from 'fs';
-import _ from 'underscore';
 import {Datastore} from '../lib/datastore.js';
 import {assert, expect} from './chaiHelper.js';
 import * as model from '../lib/model.js';
@@ -370,7 +369,7 @@ describe('Model', function () {
           , updateQuery = { $set: { "yup.subfield": 'changed', "yup.yop": 'yes indeed', "totally.doesnt.exist": 'now it does' } }
           , modified = modifyDoc(obj, updateQuery);
 
-        _.isEqual(modified, { yup: { subfield: 'changed', yop: 'yes indeed' }, totally: { doesnt: { exist: 'now it does' } } }).should.equal(true);
+        expect(modified).to.deep.equal({ yup: { subfield: 'changed', yop: 'yes indeed' }, totally: { doesnt: { exist: 'now it does' } } });
       });
 
       it("Doesn't replace a falsy field by an object when recursively following dot notation", function () {
@@ -455,11 +454,11 @@ describe('Model', function () {
           , modified;
 
         modified = modifyDoc(obj, { $inc: { nay: 2 } });
-        _.isEqual(modified, { some: 'thing', nay: 42 }).should.equal(true);
+        expect(modified).to.deep.equal({ some: 'thing', nay: 42 });
 
         // Incidentally, this tests that obj was not modified
         modified = modifyDoc(obj, { $inc: { inexistent: -6 } });
-        _.isEqual(modified, { some: 'thing', nay: 40, inexistent: -6 }).should.equal(true);
+        expect(modified).to.deep.equal({ some: 'thing', nay: 40, inexistent: -6 });
       });
 
       it('Works recursively', function () {
@@ -467,7 +466,7 @@ describe('Model', function () {
           , modified;
 
         modified = modifyDoc(obj, { $inc: { "nay.nope": -2, "blip.blop": 123 } });
-        _.isEqual(modified, { some: 'thing', nay: { nope: 38 }, blip: { blop: 123 } }).should.equal(true);
+        expect(modified).to.deep.equal({ some: 'thing', nay: { nope: 38 }, blip: { blop: 123 } });
       });
     });   // End of '$inc modifier'
 

@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import _ from 'underscore';
 import async from 'async';
 import {Datastore} from '../lib/datastore.js';
 import {assert, expect} from './chaiHelper.js';
@@ -126,9 +125,9 @@ describe('Database', function () {
             d.insert({ somedata: 'again' }, function (err) {
               d.find({}, function (err, docs) {
                  expect(docs.length).to.equal(3);
-                _.pluck(docs, 'somedata').should.contain('ok');
-                _.pluck(docs, 'somedata').should.contain('another');
-                _.pluck(docs, 'somedata').should.contain('again');
+                 expect(docs.map(doc => doc.somedata)).to.contain('ok');
+                 expect(docs.map(doc => doc.somedata)).to.contain('another');
+                 expect(docs.map(doc => doc.somedata)).to.contain('again');
                 done();
               });
             });
@@ -223,11 +222,11 @@ describe('Database', function () {
           var data;
  
           expect(docs.length).to.equal(2);
-           expect(_.find(docs, function (doc) { return doc.a === 5; }).b).to.equal('hello');
-           expect(_.find(docs, function (doc) { return doc.a === 42; }).b).to.equal('world');
+           expect(docs.find(doc => doc.a === 5).b).to.equal('hello');
+           expect(docs.find(doc => doc.a === 42).b).to.equal('world');
 
-          // The data has been persisted correctly
-          data = _.filter(fs.readFileSync(testDb, 'utf8').split('\n'), function (line) { return line.length > 0; });
+           // The data has been persisted correctly
+           data = fs.readFileSync(testDb, 'utf8').split('\n').filter(line => line.length > 0);
            expect(data.length).to.equal(2);
            expect(deserialize(data[0]).a).to.equal(5);
            expect(deserialize(data[0]).b).to.equal('hello');
@@ -423,8 +422,8 @@ describe('Database', function () {
             d.insert({ tf: 4, an: 'other' }, function (err, _doc2) {
               d.insert({ tf: 9 }, function () {
                 d.getCandidates({ r: 6, tf: 4 }, function (err, data) {
-                  var doc1 = _.find(data, function (d) { return d._id === _doc1._id; })
-                    , doc2 = _.find(data, function (d) { return d._id === _doc2._id; })
+                  var doc1 = data.find(d => d._id === _doc1._id)
+                    , doc2 = data.find(d => d._id === _doc2._id)
                     ;
  
                   expect(data.length).to.equal(2);
@@ -447,8 +446,8 @@ describe('Database', function () {
             d.insert({ tf: 4, an: 'other' }, function (err) {
               d.insert({ tf: 9 }, function (err, _doc2) {
                 d.getCandidates({ r: 6, tf: { $in: [6, 9, 5] } }, function (err, data) {
-                  var doc1 = _.find(data, function (d) { return d._id === _doc1._id; })
-                    , doc2 = _.find(data, function (d) { return d._id === _doc2._id; })
+                  var doc1 = data.find(d => d._id === _doc1._id)
+                    , doc2 = data.find(d => d._id === _doc2._id)
                     ;
  
                   expect(data.length).to.equal(2);
@@ -471,10 +470,10 @@ describe('Database', function () {
             d.insert({ tf: 4, an: 'other' }, function (err, _doc3) {
               d.insert({ tf: 9 }, function (err, _doc4) {
                 d.getCandidates({ r: 6, notf: { $in: [6, 9, 5] } }, function (err, data) {
-                  var doc1 = _.find(data, function (d) { return d._id === _doc1._id; })
-                    , doc2 = _.find(data, function (d) { return d._id === _doc2._id; })
-                    , doc3 = _.find(data, function (d) { return d._id === _doc3._id; })
-                    , doc4 = _.find(data, function (d) { return d._id === _doc4._id; })
+                  var doc1 = data.find(d => d._id === _doc1._id )
+                    , doc2 = data.find(d => d._id === _doc2._id )
+                    , doc3 = data.find(d => d._id === _doc3._id )
+                    , doc4 = data.find(d => d._id === _doc4._id )
                     ;
  
                   expect(data.length).to.equal(4);
@@ -499,8 +498,8 @@ describe('Database', function () {
             d.insert({ tf: 4, an: 'other' }, function (err, _doc3) {
               d.insert({ tf: 9 }, function (err, _doc4) {
                 d.getCandidates({ r: 6, tf: { $lte: 9, $gte: 6 } }, function (err, data) {
-                  var doc2 = _.find(data, function (d) { return d._id === _doc2._id; })
-                    , doc4 = _.find(data, function (d) { return d._id === _doc4._id; })
+                  var doc2 = data.find(d => d._id === _doc2._id)
+                    , doc4 = data.find(d => d._id === _doc4._id)
                     ;
  
                   expect(data.length).to.equal(2);
@@ -635,11 +634,11 @@ describe('Database', function () {
       , function (cb) {   // Test with empty object
         d.find({}, function (err, docs) {
           assert.isNull(err);
-           expect(docs.length).to.equal(3);
-          _.pluck(docs, 'somedata').should.contain('ok');
-          _.pluck(docs, 'somedata').should.contain('another');
-           expect(_.find(docs, function (d) { return d.somedata === 'another' }).plus).to.equal('additional data');
-          _.pluck(docs, 'somedata').should.contain('again');
+          expect(docs.length).to.equal(3);
+          expect(docs.map(d => d.somedata)).to.contain('ok');
+          expect(docs.map(d => d.somedata)).to.contain('another');
+          expect(docs.find(d => d.somedata === 'another').plus).to.equal('additional data');
+          expect(docs.map(d => d.somedata)).to.contain('again');
           return cb();
         });
       }
@@ -658,15 +657,15 @@ describe('Database', function () {
       , function (cb) {   // Test with query that will return docs
         d.find({ somedata: 'again' }, function (err, docs) {
           assert.isNull(err);
-           expect(docs.length).to.equal(2);
-          _.pluck(docs, 'somedata').should.not.contain('ok');
+          expect(docs.length).to.equal(2);
+          expect(docs.map(d => d.somedata)).to.not.contain('ok');
           return cb();
         });
       }
       , function (cb) {   // Test with query that doesn't match anything
         d.find({ somedata: 'nope' }, function (err, docs) {
           assert.isNull(err);
-           expect(docs.length).to.equal(0);
+          expect(docs.length).to.equal(0);
           return cb();
         });
       }
@@ -758,22 +757,22 @@ describe('Database', function () {
           d.insert({ fruits: ['banana'] }, function (err, doc3) {
             d.find({ fruits: 'pear' }, function (err, docs) {
               assert.isNull(err);
-               expect(docs.length).to.equal(2);
-              _.pluck(docs, '_id').should.contain(doc1._id);
-              _.pluck(docs, '_id').should.contain(doc2._id);
+              expect(docs.length).to.equal(2);
+              expect(docs.map(d => d._id)).to.contain(doc1._id);
+              expect(docs.map(d => d._id)).to.contain(doc2._id);
 
               d.find({ fruits: 'banana' }, function (err, docs) {
                 assert.isNull(err);
-                 expect(docs.length).to.equal(2);
-                _.pluck(docs, '_id').should.contain(doc1._id);
-                _.pluck(docs, '_id').should.contain(doc3._id);
+                expect(docs.length).to.equal(2);
+                expect(docs.map(d => d._id)).to.contain(doc1._id);
+                expect(docs.map(d => d._id)).to.contain(doc3._id);
 
                 d.find({ fruits: 'doesntexist' }, function (err, docs) {
-                  assert.isNull(err);
-                   expect(docs.length).to.equal(0);
+                assert.isNull(err);
+                expect(docs.length).to.equal(0);
 
-                  done();
-                });
+                done();
+               });
               });
             });
           });
@@ -1037,13 +1036,13 @@ describe('Database', function () {
            expect(n).to.equal(0);
 
           d.find({}, function (err, docs) {
-            var doc1 = _.find(docs, function (d) { return d.somedata === 'ok'; })
-              , doc2 = _.find(docs, function (d) { return d.somedata === 'again'; })
-              , doc3 = _.find(docs, function (d) { return d.somedata === 'another'; })
+            var doc1 = docs.find(d => d.somedata === 'ok')
+              , doc2 = docs.find(d => d.somedata === 'again')
+              , doc3 = docs.find(d => d.somedata === 'another')
               ;
  
             expect(docs.length).to.equal(3);
-            assert.isUndefined(_.find(docs, function (d) { return d.newDoc === 'yes'; }));
+            assert.isUndefined(docs.find(d => d.newDoc === 'yes'));
 
             assert.deepEqual(doc1, { _id: doc1._id, somedata: 'ok' });
             assert.deepEqual(doc2, { _id: doc2._id, somedata: 'again', plus: 'additional data' });
@@ -1090,9 +1089,9 @@ describe('Database', function () {
       // Test DB state after update and reload
       function testPostUpdateState (cb) {
         d.find({}, function (err, docs) {
-          var doc1 = _.find(docs, function (d) { return d._id === id1; })
-            , doc2 = _.find(docs, function (d) { return d._id === id2; })
-            , doc3 = _.find(docs, function (d) { return d._id === id3; })
+          var doc1 = docs.find(d =>d._id === id1)
+            , doc2 = docs.find(d =>d._id === id2)
+            , doc3 = docs.find(d =>d._id === id3)
             ;
  
           expect(docs.length).to.equal(3);
@@ -1148,9 +1147,9 @@ describe('Database', function () {
       // Test DB state after update and reload
       function testPostUpdateState (cb) {
         d.find({}, function (err, docs) {
-          var doc1 = _.find(docs, function (d) { return d._id === id1; })
-            , doc2 = _.find(docs, function (d) { return d._id === id2; })
-            , doc3 = _.find(docs, function (d) { return d._id === id3; })
+          var doc1 = docs.find(d =>d._id === id1)
+            , doc2 = docs.find(d =>d._id === id2)
+            , doc3 = docs.find(d =>d._id === id3)
             ;
  
           expect(docs.length).to.equal(3);
@@ -1438,8 +1437,8 @@ describe('Database', function () {
             d.find({}, function (err, docs) {
               docs.sort(function (a, b) { return a.a - b.a; });
                expect(docs.length).to.equal(2);
-               expect(_.isEqual(docs[0], { _id: doc1._id, a:1, hello: 'world' })).to.equal(true);
-               expect(_.isEqual(docs[1], { _id: doc2._id, a:2, hello: 'changed' })).to.equal(true);
+               expect(docs[0]).to.deep.equal({ _id: doc1._id, a:1, hello: 'world' });
+               expect(docs[1]).to.deep.equal({ _id: doc2._id, a:2, hello: 'changed' });
 
               // Even after a reload the database state hasn't changed
               d.loadDatabase(function (err) {
@@ -1448,8 +1447,8 @@ describe('Database', function () {
                 d.find({}, function (err, docs) {
                   docs.sort(function (a, b) { return a.a - b.a; });
                    expect(docs.length).to.equal(2);
-                   expect(_.isEqual(docs[0], { _id: doc1._id, a:1, hello: 'world' })).to.equal(true);
-                   expect(_.isEqual(docs[1], { _id: doc2._id, a:2, hello: 'changed' })).to.equal(true);
+                   expect(docs[0]).to.deep.equal({ _id: doc1._id, a:1, hello: 'world' });
+                   expect(docs[1]).to.deep.equal({ _id: doc2._id, a:2, hello: 'changed' });
 
                   done();
                 });
@@ -1470,9 +1469,9 @@ describe('Database', function () {
               d.find({}, function (err, docs) {
                 docs.sort(function (a, b) { return a.a - b.a; });
                  expect(docs.length).to.equal(3);
-                 expect(_.isEqual(docs[0], { _id: doc1._id, a:1, hello: 'changed' })).to.equal(true);
-                 expect(_.isEqual(docs[1], { _id: doc2._id, a:2, hello: 'changed' })).to.equal(true);
-                 expect(_.isEqual(docs[2], { _id: doc3._id, a:5, hello: 'pluton' })).to.equal(true);
+                 expect(docs[0]).to.deep.equal({ _id: doc1._id, a:1, hello: 'changed' });
+                 expect(docs[1]).to.deep.equal({ _id: doc2._id, a:2, hello: 'changed' });
+                 expect(docs[2]).to.deep.equal({ _id: doc3._id, a:5, hello: 'pluton' });
 
                 // Even after a reload the database state hasn't changed
                 d.loadDatabase(function (err) {
@@ -1481,9 +1480,9 @@ describe('Database', function () {
                   d.find({}, function (err, docs) {
                     docs.sort(function (a, b) { return a.a - b.a; });
                      expect(docs.length).to.equal(3);
-                     expect(_.isEqual(docs[0], { _id: doc1._id, a:1, hello: 'changed' })).to.equal(true);
-                     expect(_.isEqual(docs[1], { _id: doc2._id, a:2, hello: 'changed' })).to.equal(true);
-                     expect(_.isEqual(docs[2], { _id: doc3._id, a:5, hello: 'pluton' })).to.equal(true);
+                     expect(docs[0]).to.deep.equal({ _id: doc1._id, a:1, hello: 'changed' });
+                     expect(docs[1]).to.deep.equal({ _id: doc2._id, a:2, hello: 'changed' });
+                     expect(docs[2]).to.deep.equal({ _id: doc3._id, a:5, hello: 'pluton' });
 
                     done();
                   });
@@ -1503,9 +1502,9 @@ describe('Database', function () {
               assert.isNull(err);
                expect(nr).to.equal(1);
               d.find({}, function (err, docs) {
-                var d1 = _.find(docs, function (doc) { return doc._id === doc1._id })
-                  , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
-                  , d3 = _.find(docs, function (doc) { return doc._id === doc3._id })
+                var d1 = docs.find(doc => doc._id === doc1._id)
+                  , d2 = docs.find(doc => doc._id === doc2._id)
+                  , d3 = docs.find(doc => doc._id === doc3._id)
                   ;
                    
                 expect(d1.a).to.equal(1);
@@ -1530,11 +1529,11 @@ describe('Database', function () {
               assert.isDefined(err);
 
               // No index modified
-              _.each(d.indexes, function (index) {
+              Object.values(d.indexes).forEach(index => {
                 var docs = index.getAll()
-                  , d1 = _.find(docs, function (doc) { return doc._id === doc1._id })
-                  , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
-                  , d3 = _.find(docs, function (doc) { return doc._id === doc3._id })
+                  , d1 = docs.find(doc => doc._id === doc1._id)
+                  , d2 = docs.find(doc => doc._id === doc2._id)
+                  , d3 = docs.find(doc => doc._id === doc3._id)
                   ;
 
                 // All changes rolled back, including those that didn't trigger an error
@@ -1559,14 +1558,14 @@ describe('Database', function () {
             assert.isDefined(err);
 
             // Check that no index was modified
-            _.each(d.indexes, function (index) {
+            Object.values(d.indexes).forEach(index => {
               var docs = index.getAll()
-              , d1 = _.find(docs, function (doc) { return doc._id === doc1._id })
-              , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
+              , d1 = docs.find(doc => doc._id === doc1._id)
+              , d2 = docs.find(doc => doc._id === doc2._id)
               ;
  
               expect(d1.a).to.equal(4);
-               expect(d2.a).to.equal(5);
+              expect(d2.a).to.equal(5);
             });
 
             done();
@@ -1814,8 +1813,8 @@ describe('Database', function () {
               d.find({}, function (err, docs) {
                 docs.sort(function (a, b) { return a.a - b.a; });
                  expect(docs.length).to.equal(2);
-                 expect(_.isEqual(docs[0], { _id: doc1._id, a:1, hello: 'world' })).to.equal(true);
-                 expect(_.isEqual(docs[1], { _id: doc3._id, a:3, hello: 'moto' })).to.equal(true);
+                 expect(docs[0]).to.deep.equal({ _id: doc1._id, a:1, hello: 'world' });
+                 expect(docs[1]).to.deep.equal({ _id: doc3._id, a:3, hello: 'moto' });
 
                 // Even after a reload the database state hasn't changed
                 d.loadDatabase(function (err) {
@@ -1824,8 +1823,8 @@ describe('Database', function () {
                   d.find({}, function (err, docs) {
                     docs.sort(function (a, b) { return a.a - b.a; });
                      expect(docs.length).to.equal(2);
-                     expect(_.isEqual(docs[0], { _id: doc1._id, a:1, hello: 'world' })).to.equal(true);
-                     expect(_.isEqual(docs[1], { _id: doc3._id, a:3, hello: 'moto' })).to.equal(true);
+                     expect(docs[0]).to.deep.equal({ _id: doc1._id, a:1, hello: 'world' });
+                     expect(docs[1]).to.deep.equal({ _id: doc3._id, a:3, hello: 'moto' });
 
                     done();
                   });
@@ -1846,7 +1845,7 @@ describe('Database', function () {
 
               d.find({}, function (err, docs) {
                  expect(docs.length).to.equal(1);
-                 expect(_.isEqual(docs[0], { _id: doc2._id, a:2, hello: 'earth' })).to.equal(true);
+                 expect(docs[0]).to.deep.equal({ _id: doc2._id, a:2, hello: 'earth' });
 
                 // Even after a reload the database state hasn't changed
                 d.loadDatabase(function (err) {
@@ -1854,7 +1853,7 @@ describe('Database', function () {
 
                   d.find({}, function (err, docs) {
                      expect(docs.length).to.equal(1);
-                     expect(_.isEqual(docs[0], { _id: doc2._id, a:2, hello: 'earth' })).to.equal(true);
+                     expect(docs[0]).to.deep.equal({ _id: doc2._id, a:2, hello: 'earth' });
 
                     done();
                   });
@@ -1874,9 +1873,9 @@ describe('Database', function () {
               assert.isNull(err);
                expect(nr).to.equal(1);
               d.find({}, function (err, docs) {
-                var d1 = _.find(docs, function (doc) { return doc._id === doc1._id })
-                  , d2 = _.find(docs, function (doc) { return doc._id === doc2._id })
-                  , d3 = _.find(docs, function (doc) { return doc._id === doc3._id })
+                var d1 = docs.find(doc => doc._id === doc1._id)
+                  , d2 = docs.find(doc => doc._id === doc2._id)
+                  , d3 = docs.find(doc => doc._id === doc3._id)
                   ;
                    
                 expect(d1.a).to.equal(1);
@@ -1993,9 +1992,9 @@ describe('Database', function () {
 
                     // The data in the z index is correct
                     d.find({}, function (err, docs) {
-                      var doc0 = _.find(docs, function (doc) { return doc._id === 'aaa'; })
-                        , doc1 = _.find(docs, function (doc) { return doc._id === newDoc1._id; })
-                        , doc2 = _.find(docs, function (doc) { return doc._id === newDoc2._id; })
+                      var doc0 = docs.find(doc => doc._id === 'aaa')
+                        , doc1 = docs.find(doc => doc._id === newDoc1._id)
+                        , doc2 = docs.find(doc => doc._id === newDoc2._id)
                         ;
  
                       expect(docs.length).to.equal(3);
@@ -2031,9 +2030,9 @@ describe('Database', function () {
 
         fs.writeFile(testDb, rawData, 'utf8', function () {
           d.loadDatabase(function () {
-            var doc1 = _.find(d.getAllData(), function (doc) { return doc.z === "1"; })
-              , doc2 = _.find(d.getAllData(), function (doc) { return doc.z === "2"; })
-              , doc3 = _.find(d.getAllData(), function (doc) { return doc.z === "3"; })
+            var doc1 = d.getAllData().find(doc => doc.z === "1")
+              , doc2 = d.getAllData().find(doc => doc.z === "2")
+              , doc3 = d.getAllData().find(doc => doc.z === "3")
               ;
  
             expect(d.getAllData().length).to.equal(3);
@@ -2063,9 +2062,9 @@ describe('Database', function () {
 
             fs.writeFile(testDb, rawData, 'utf8', function () {
               d.loadDatabase(function (err) {
-                var doc1 = _.find(d.getAllData(), function (doc) { return doc.z === "1"; })
-                  , doc2 = _.find(d.getAllData(), function (doc) { return doc.z === "2"; })
-                  , doc3 = _.find(d.getAllData(), function (doc) { return doc.z === "3"; })
+                var doc1 = d.getAllData().find(doc => doc.z === "1")
+                  , doc2 = d.getAllData().find(doc => doc.z === "2")
+                  , doc3 = d.getAllData().find(doc => doc.z === "3")
                   ;
 
                 assert.isNull(err);
@@ -2298,8 +2297,8 @@ describe('Database', function () {
         d.insert({ a: 1, b: 'hello' }, function (err, doc1) {
           d.insert({ a: 2, b: 'si' }, function (err, doc2) {
             d.find({}, function (err, docs) {
-              assert.deepEqual(doc1, _.find(docs, function (d) { return d._id === doc1._id; }));
-              assert.deepEqual(doc2, _.find(docs, function (d) { return d._id === doc2._id; }));
+              assert.deepEqual(doc1, docs.find(d => d._id === doc1._id));
+              assert.deepEqual(doc2, docs.find(d => d._id === doc2._id));
 
               done();
             });
@@ -2364,8 +2363,8 @@ describe('Database', function () {
           d.insert({ a: 2, b: 'si' }, function (err, _doc2) {
             d.update({ a: 1 }, { $set: { a: 456, b: 'no' } }, {}, function (err, nr) {
               var data = d.getAllData()
-                , doc1 = _.find(data, function (doc) { return doc._id === _doc1._id; })
-                , doc2 = _.find(data, function (doc) { return doc._id === _doc2._id; })
+                , doc1 = data.find(doc => doc._id === _doc1._id)
+                , doc2 = data.find(doc => doc._id === _doc2._id)
                 ;
 
               assert.isNull(err);
@@ -2377,8 +2376,8 @@ describe('Database', function () {
 
               d.update({}, { $inc: { a: 10 }, $set: { b: 'same' } }, { multi: true }, function (err, nr) {
                 var data = d.getAllData()
-                  , doc1 = _.find(data, function (doc) { return doc._id === _doc1._id; })
-                  , doc2 = _.find(data, function (doc) { return doc._id === _doc2._id; })
+                  , doc1 = data.find(doc => doc._id === _doc1._id)
+                  , doc2 = data.find(doc => doc._id === _doc2._id)
                   ;
 
                 assert.isNull(err);
@@ -2434,8 +2433,8 @@ describe('Database', function () {
  
                 expect(d.indexes.b.tree.getNumberOfKeys()).to.equal(1);
                  expect(d.indexes.b.getMatching('same').length).to.equal(2);
-                _.pluck(d.indexes.b.getMatching('same'), '_id').should.contain(doc1._id);
-                _.pluck(d.indexes.b.getMatching('same'), '_id').should.contain(doc2._id);
+                expect(d.indexes.b.getMatching('same').map(o => o._id)).to.contain(doc1._id);
+                expect(d.indexes.b.getMatching('same').map(o => o._id)).to.contain(doc2._id);
 
                 // The same pointers are shared between all indexes
                  expect(d.indexes.a.tree.getNumberOfKeys()).to.equal(2);
@@ -2464,9 +2463,9 @@ describe('Database', function () {
               // Will conflict with doc3
               d.update({ a: 2 }, { $inc: { a: 10, c: 1000 }, $set: { b: 30 } }, {}, function (err) {
                 var data = d.getAllData()
-                  , doc1 = _.find(data, function (doc) { return doc._id === _doc1._id; })
-                  , doc2 = _.find(data, function (doc) { return doc._id === _doc2._id; })
-                  , doc3 = _.find(data, function (doc) { return doc._id === _doc3._id; })
+                  , doc1 = data.find(doc => doc._id === _doc1._id)
+                  , doc2 = data.find(doc => doc._id === _doc2._id)
+                  , doc3 = data.find(doc => doc._id === _doc3._id)
                   ;
  
                 expect(err.errorType).to.equal('uniqueViolated');
@@ -2511,9 +2510,9 @@ describe('Database', function () {
               // Will conflict with doc3
               d.update({ a: { $in: [1, 2] } }, { $inc: { a: 10, c: 1000 }, $set: { b: 30 } }, { multi: true }, function (err) {
                 var data = d.getAllData()
-                  , doc1 = _.find(data, function (doc) { return doc._id === _doc1._id; })
-                  , doc2 = _.find(data, function (doc) { return doc._id === _doc2._id; })
-                  , doc3 = _.find(data, function (doc) { return doc._id === _doc3._id; })
+                  , doc1 = data.find(doc => doc._id === _doc1._id)
+                  , doc2 = data.find(doc => doc._id === _doc2._id)
+                  , doc3 = data.find(doc => doc._id === _doc3._id)
                   ;
  
                 expect(err.errorType).to.equal('uniqueViolated');
@@ -2559,8 +2558,8 @@ describe('Database', function () {
             d.insert({ a: 3, b: 'coin' }, function (err, _doc3) {
               d.remove({ a: 1 }, {}, function (err, nr) {
                 var data = d.getAllData()
-                , doc2 = _.find(data, function (doc) { return doc._id === _doc2._id; })
-                , doc3 = _.find(data, function (doc) { return doc._id === _doc3._id; })
+                , doc2 = data.find(doc => doc._id === _doc2._id)
+                , doc3 = data.find(doc => doc._id === _doc3._id)
                 ;
 
                 assert.isNull(err);

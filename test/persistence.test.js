@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import _ from 'underscore';
 import async from 'async';
 import {Datastore} from '../lib/datastore.js';
 import {Persistence} from '../lib/persistence.js';
@@ -177,8 +176,8 @@ describe('Persistence', function () {
         assert.isNull(err);
         d.insert({ a: 2 }, function (err) {
           var data = d.getAllData()
-            , doc1 = _.find(data, function (doc) { return doc.a === 1; })
-            , doc2 = _.find(data, function (doc) { return doc.a === 2; })
+            , doc1 = data.find(doc => doc.a === 1)
+            , doc2 = data.find(doc => doc.a === 2)
           ;
           assert.isNull(err);
           data.length.should.equal(2);
@@ -187,8 +186,8 @@ describe('Persistence', function () {
 
           d.loadDatabase(function (err) {
             var data = d.getAllData()
-              , doc1 = _.find(data, function (doc) { return doc.a === 1; })
-              , doc2 = _.find(data, function (doc) { return doc.a === 2; })
+              , doc1 = data.find(doc => doc.a === 1)
+              , doc2 = data.find(doc => doc.a === 2)
             ;
             assert.isNull(err);
             data.length.should.equal(2);
@@ -208,8 +207,8 @@ describe('Persistence', function () {
         assert.isNull(err);
         d.insert({ a: 2 }, function (err) {
           var data = d.getAllData()
-            , doc1 = _.find(data, function (doc) { return doc.a === 1; })
-            , doc2 = _.find(data, function (doc) { return doc.a === 2; })
+            , doc1 = data.find(doc => doc.a === 1)
+            , doc2 = data.find(doc => doc.a === 2)
           ;
           assert.isNull(err);
           data.length.should.equal(2);
@@ -236,8 +235,8 @@ describe('Persistence', function () {
         assert.isNull(err);
         d.insert({ a: 2 }, function (err) {
           var data = d.getAllData()
-            , doc1 = _.find(data, function (doc) { return doc.a === 1; })
-            , doc2 = _.find(data, function (doc) { return doc.a === 2; })
+            , doc1 = data.find(doc => doc.a === 1)
+            , doc2 = data.find(doc => doc.a === 2)
           ;
           assert.isNull(err);
           data.length.should.equal(2);
@@ -248,9 +247,9 @@ describe('Persistence', function () {
             assert.isNull(err);
             d.loadDatabase(function (err) {
               var data = d.getAllData()
-                , doc1 = _.find(data, function (doc) { return doc.a === 1; })
-                , doc2 = _.find(data, function (doc) { return doc.a === 2; })
-                , doc3 = _.find(data, function (doc) { return doc.a === 3; })
+                , doc1 = data.find(doc => doc.a === 1)
+                , doc2 = data.find(doc => doc.a === 2)
+                , doc3 = data.find(doc => doc.a === 3)
               ;
               assert.isNull(err);
               data.length.should.equal(1);
@@ -787,8 +786,8 @@ describe('Persistence', function () {
         theDb.find({}, function (err, docs) {
           assert.isNull(err);
           docs.length.should.equal(2);
-          _.find(docs, function (item) { return item._id === doc1._id }).a.should.equal('hello');
-          _.find(docs, function (item) { return item._id === doc2._id }).a.should.equal('world');
+          docs.find(item => item._id === doc1._id).a.should.equal('hello');
+          docs.find(item => item._id === doc2._id).a.should.equal('world');
           return cb();
         });
       }
@@ -799,8 +798,8 @@ describe('Persistence', function () {
         theDb.find({}, function (err, docs) {
           assert.isNull(err);
           docs.length.should.equal(2);
-          _.find(docs, function (item) { return item._id === doc1._id }).a.should.equal('hello');
-          _.find(docs, function (item) { return item._id === doc2._id }).a.should.equal('world');
+          docs.find(item => item._id === doc1._id).a.should.equal('hello');
+          docs.find(item => item._id === doc2._id).a.should.equal('world');
           return cb();
         });
       }
@@ -817,8 +816,8 @@ describe('Persistence', function () {
         theDb2.find({}, function (err, docs) {
           assert.isNull(err);
           docs.length.should.equal(2);
-          _.find(docs, function (item) { return item._id === doc1._id }).a.should.equal('hello');
-          _.find(docs, function (item) { return item._id === doc2._id }).a.should.equal('world');
+          docs.find(item => item._id === doc1._id).a.should.equal('hello');
+          docs.find(item => item._id === doc2._id).a.should.equal('world');
           return cb();
         });
       }
@@ -868,7 +867,7 @@ describe('Persistence', function () {
           db.find({}, function (err, docs) {
             docs.length.should.equal(N);
             for (i = 0; i < N; i += 1) {
-              doc_i = _.find(docs, function (d) { return d._id === 'anid_' + i; });
+              doc_i = docs.find(d => d._id === 'anid_' + i);
               assert.isDefined(doc_i);
               assert.deepEqual({ hello: 'world', _id: 'anid_' + i }, doc_i);
             }

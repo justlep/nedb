@@ -1,10 +1,9 @@
 import fs from 'fs';
 import path from 'path';
-import _ from 'underscore';
 import async from 'async';
 import {Datastore} from '../lib/datastore.js';
 import {Cursor} from '../lib/cursor.js';
-import {assert} from './chaiHelper.js';
+import {assert, expect} from './chaiHelper.js';
 import {ensureDirectoryExists} from '../lib/storage.js';
 
 const testDb = 'workspace/test.db';
@@ -60,11 +59,11 @@ describe('Cursor', function () {
         cursor.exec(function (err, docs) {
           assert.isNull(err);
           docs.length.should.equal(5);
-          _.filter(docs, function(doc) { return doc.age === 5; })[0].age.should.equal(5);
-          _.filter(docs, function(doc) { return doc.age === 57; })[0].age.should.equal(57);
-          _.filter(docs, function(doc) { return doc.age === 52; })[0].age.should.equal(52);
-          _.filter(docs, function(doc) { return doc.age === 23; })[0].age.should.equal(23);
-          _.filter(docs, function(doc) { return doc.age === 89; })[0].age.should.equal(89);
+          docs.filter(doc => doc.age === 5)[0].age.should.equal(5);
+          docs.filter(doc => doc.age === 57)[0].age.should.equal(57);
+          docs.filter(doc => doc.age === 52)[0].age.should.equal(52);
+          docs.filter(doc => doc.age === 23)[0].age.should.equal(23);
+          docs.filter(doc =>  doc.age === 89)[0].age.should.equal(89);
           cb();
         });
       }
@@ -73,11 +72,11 @@ describe('Cursor', function () {
         cursor.exec(function (err, docs) {
           assert.isNull(err);
           docs.length.should.equal(5);
-          _.filter(docs, function(doc) { return doc.age === 5; })[0].age.should.equal(5);
-          _.filter(docs, function(doc) { return doc.age === 57; })[0].age.should.equal(57);
-          _.filter(docs, function(doc) { return doc.age === 52; })[0].age.should.equal(52);
-          _.filter(docs, function(doc) { return doc.age === 23; })[0].age.should.equal(23);
-          _.filter(docs, function(doc) { return doc.age === 89; })[0].age.should.equal(89);
+          docs.filter(doc => doc.age === 5)[0].age.should.equal(5);
+          docs.filter(doc => doc.age === 57)[0].age.should.equal(57);
+          docs.filter(doc => doc.age === 52)[0].age.should.equal(52);
+          docs.filter(doc => doc.age === 23)[0].age.should.equal(23);
+          docs.filter(doc => doc.age === 89)[0].age.should.equal(89);
           cb();
         });
       }
@@ -86,9 +85,9 @@ describe('Cursor', function () {
         cursor.exec(function (err, docs) {
           assert.isNull(err);
           docs.length.should.equal(3);
-          _.filter(docs, function(doc) { return doc.age === 57; })[0].age.should.equal(57);
-          _.filter(docs, function(doc) { return doc.age === 52; })[0].age.should.equal(52);
-          _.filter(docs, function(doc) { return doc.age === 89; })[0].age.should.equal(89);
+          docs.filter(doc => doc.age === 57)[0].age.should.equal(57);
+          docs.filter(doc => doc.age === 52)[0].age.should.equal(52);
+          docs.filter(doc => doc.age === 89)[0].age.should.equal(89);
           cb();
         });
       }
@@ -198,16 +197,11 @@ describe('Cursor', function () {
       db.insert({ name: 'zulu' });
 
       db.find({}).sort({ name: 1 }).exec(function (err, docs) {
-        _.pluck(docs, 'name')[0].should.equal('zulu');
-        _.pluck(docs, 'name')[1].should.equal('alpha');
-        _.pluck(docs, 'name')[2].should.equal('charlie');
+        expect(docs.map(d => d.name)).to.deep.equal(['zulu','alpha','charlie']);
 
         delete db.compareStrings;
         db.find({}).sort({ name: 1 }).exec(function (err, docs) {
-          _.pluck(docs, 'name')[0].should.equal('alpha');
-          _.pluck(docs, 'name')[1].should.equal('charlie');
-          _.pluck(docs, 'name')[2].should.equal('zulu');
-
+          expect(docs.map(d => d.name)).to.deep.equal(['alpha','charlie','zulu']);
           done();
         });
       });
