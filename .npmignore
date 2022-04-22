@@ -1,0 +1,11 @@
+test/
+test_lac/
+test_lac/workspace
+.idea
+.editorconfig
+.eslintrc
+.travis.yml
+package-lock.json
+workspace
+benchmarks
+*.tgz

@@ -1,6 +1,9 @@
-(The MIT License)
+The MIT License (MIT)
 
-Copyright (c) 2013 Louis Chatriot &lt;louis.chatriot@gmail.com&gt;
+Copyright for great portions of project @justlep/nedb are
+held by Louis Chatriot, 2013 as part of project nedb.
+All other copyright for project @justlep/nedb are
+held by Lennart Pegel, 2022.
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the

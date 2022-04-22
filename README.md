@@ -1,33 +1,37 @@
-<img src="http://i.imgur.com/9O1xHFb.png" style="width: 25%; height: 25%; float: left;">
+<img src="https://github.com/justlep/nedb/blob/master/logo.png?raw=true" style="width: 25%; height: 25%">
 
 ## The JavaScript Database
 
-> :warning: :warning: :warning: **WARNING:** this library is no longer maintained, and may have bugs and security issues. Feel free to fork but no pull request or security alert will be answered.
+[![Build Status](https://api.travis-ci.com/justlep/nedb.svg?branch=master)](https://app.travis-ci.com/github/justlep/nedb)
+
+This is a cleaned up and modernized fork of [nedb](https://github.com/louischatriot/nedb/),
+the **embedded persistent or in-memory database for Node.js**.
+
+* provided as ES module
+* Node.js 14.17.6 and above
+* minimal dependencies ([async](https://www.npmjs.com/package/async) + [binary-search-tree](https://www.npmjs.com/package/@justlep/binary-search-tree))
+* 100% JavaScript, no binary dependency.
+ 
+API is a subset of MongoDB's and it's <a href="#speed">plenty fast</a>.
+
+### Breaking changes in this fork:
+
+* removed browser version (including bower)
+* removed Node Webkit-related code, including `nodeWebkitAppName` parameter of `Datastore` constructor
+* no more CommonJS
+
+## Support the original NeDB creator
+
+If you want to donate "some monies" to the original creator of NeDB, Louis Chatriot,
+visit his [official NeDB project](https://github.com/louischatriot/nedb) page and find donation infos there.
 
 
-**Embedded persistent or in memory database for Node.js, nw.js, Electron and browsers, 100% JavaScript, no binary dependency**. API is a subset of MongoDB's and it's <a href="#speed">plenty fast</a>.
-
-**IMPORTANT NOTE**: Please don't submit issues for questions regarding your code. Only actual bugs or feature requests will be answered, all others will be closed without comment. Also, please follow the <a href="#bug-reporting-guidelines">bug reporting guidelines</a> and check the <a href="https://github.com/louischatriot/nedb/wiki/Change-log" target="_blank">change log</a> before submitting an already fixed bug :)
-
-## Support NeDB development
-
-<img src="http://i.imgur.com/mpwi4lf.jpg">
-
-No time to <a href="#pull-requests">help out</a>? You can support NeDB development by sending money or bitcoins!
-
-Money: [![Donate to author](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=louis%2echatriot%40gmail%2ecom&lc=US&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donate_LG%2egif%3aNonHostedGuest)
-
-Bitcoin address: 1dDZLnWpBbodPiN8sizzYrgaz5iahFyb1
-
-
-## Installation, tests
-Module name on npm and bower is `nedb`.
-
+## Installation
 ```
-npm install nedb --save    # Put latest version in your package.json
-npm test                   # You'll need the dev dependencies to launch tests
-bower install nedb         # For the browser versions, which will be in browser-version/out
+npm install @justlep/nedb --save
 ```
+
+Use `npm test` to run tests if you cloned this repo for development.
 
 ## API
 It is a subset of MongoDB's API (the most used operations).
@@ -64,7 +68,6 @@ You can use NeDB as an in-memory only datastore or as a persistent datastore. On
 default string comparison which is not well adapted to non-US characters
 in particular accented letters. Native `localCompare` will most of the
 time be the right choice
-* `nodeWebkitAppName` (optional, **DEPRECATED**): if you are using NeDB from whithin a Node Webkit app, specify its name (the same one you use in the `package.json`) in this field and the `filename` will be relative to the directory Node Webkit uses to store the rest of the application's data (local storage etc.). It works on Linux, OS X and Windows. Now that you can use `require('nw.gui').App.dataPath` in Node Webkit to get the path to the data directory for your application, you should not use this option anymore and it will be removed.
 
 If you use a persistent datastore without the `autoload` option, you need to call `loadDatabase` manually.
 This function fetches the data from datafile and prepares the database. **Don't forget it!** If you use a
@@ -74,39 +77,30 @@ is called, so make sure to call it yourself or use the `autoload` option.
 Also, if `loadDatabase` fails, all commands registered to the executor afterwards will not be executed. They will be registered and executed, in sequence, only after a successful `loadDatabase`.
 
 ```javascript
-// Type 1: In-memory only datastore (no need to load the database)
-var Datastore = require('nedb')
-  , db = new Datastore();
+import {Datastore} from require('@justlep/nedb');
 
+// Type 1: In-memory only datastore (no need to load the database)
+const db = new Datastore();
 
 // Type 2: Persistent datastore with manual loading
-var Datastore = require('nedb')
-  , db = new Datastore({ filename: 'path/to/datafile' });
-db.loadDatabase(function (err) {    // Callback is optional
+const db = new Datastore({filename: 'path/to/datafile'});
+db.loadDatabase(err => {    // Callback is optional
   // Now commands will be executed
 });
 
-
 // Type 3: Persistent datastore with automatic loading
-var Datastore = require('nedb')
-  , db = new Datastore({ filename: 'path/to/datafile', autoload: true });
+const db = new Datastore({filename: 'path/to/datafile', autoload: true});
 // You can issue commands right away
 
 
-// Type 4: Persistent datastore for a Node Webkit app called 'nwtest'
-// For example on Linux, the datafile will be ~/.config/nwtest/nedb-data/something.db
-var Datastore = require('nedb')
-  , path = require('path')
-  , db = new Datastore({ filename: path.join(require('nw.gui').App.dataPath, 'something.db') });
+// Of course you can create multiple datastores if you need several collections. 
+// In this case it's usually a good idea to use autoload for all collections.
+const db = {
+  users: new Datastore({filename: 'path/to/users.db', autoload: true}),
+  robots: new Datastore({filename: 'path/to/robots.db', autoload: true});
+};
 
-
-// Of course you can create multiple datastores if you need several
-// collections. In this case it's usually a good idea to use autoload for all collections.
-db = {};
-db.users = new Datastore('path/to/users.db');
-db.robots = new Datastore('path/to/robots.db');
-
-// You need to load each database (here we do it asynchronously)
+// Without autoload, you would need to load each database (asynchronously!)
 db.users.loadDatabase();
 db.robots.loadDatabase();
 ```
@@ -135,15 +129,16 @@ If the document does not contain an `_id` field, NeDB will automatically generat
 Field names cannot begin by '$' or contain a '.'.
 
 ```javascript
-var doc = { hello: 'world'
-               , n: 5
-               , today: new Date()
-               , nedbIsAwesome: true
-               , notthere: null
-               , notToBeSaved: undefined  // Will not be saved
-               , fruits: [ 'apple', 'orange', 'pear' ]
-               , infos: { name: 'nedb' }
-               };
+let doc = {
+    hello: 'world',
+    n: 5,
+    today: new Date(),
+    nedbIsAwesome: true,
+    notthere: null,
+    notToBeSaved: undefined,  // will not be saved
+    fruits: ['apple', 'orange', 'pear'],
+    infos: {name: 'nedb'},
+   };
 
 db.insert(doc, function (err, newDoc) {   // Callback is optional
   // newDoc is the newly inserted document, including its _id
@@ -154,13 +149,13 @@ db.insert(doc, function (err, newDoc) {   // Callback is optional
 You can also bulk-insert an array of documents. This operation is atomic, meaning that if one insert fails due to a unique constraint being violated, all changes are rolled back.
 
 ```javascript
-db.insert([{ a: 5 }, { a: 42 }], function (err, newDocs) {
+db.insert([ {a: 5}, {a: 42} ], function (err, newDocs) {
   // Two documents were inserted in the database
   // newDocs is an array with these documents, augmented with their _id
 });
 
 // If there is a unique constraint on field 'a', this will fail
-db.insert([{ a: 5 }, { a: 42 }, { a: 5 }], function (err) {
+db.insert([ {a: 5}, {a: 42}, {a: 5} ], function (err) {
   // err is a 'uniqueViolated' error
   // The database was not modified
 });
@@ -439,14 +434,14 @@ db.count({}, function (err, count) {
 
 ### Updating documents
 `db.update(query, update, options, callback)` will update all documents matching `query` according to the `update` rules:  
-* `query` is the same kind of finding query you use with `find` and `findOne`
-* `update` specifies how the documents should be modified. It is either a new document or a set of modifiers (you cannot use both together, it doesn't make sense!)
+* `query` (Object) is the same kind of finding query you use with `find` and `findOne`
+* `update` (Object) specifies how the documents should be modified. It is either a new document or a set of modifiers (you cannot use both together, it doesn't make sense!)
   * A new document will replace the matched docs
   * The modifiers create the fields they need to modify if they don't exist, and you can apply them to subdocs. Available field modifiers are `$set` to change a field's value, `$unset` to delete a field, `$inc` to increment a field's value and `$min`/`$max` to change field's value, only if provided value is less/greater than current value. To work on arrays, you have `$push`, `$pop`, `$addToSet`, `$pull`, and the special `$each` and `$slice`. See examples below for the syntax.
 * `options` is an object with two possible parameters
-  * `multi` (defaults to `false`) which allows the modification of several documents if set to true
-  * `upsert` (defaults to `false`) if you want to insert a new document corresponding to the `update` rules if your `query` doesn't match anything. If your `update` is a simple object with no modifiers, it is the inserted document. In the other case, the `query` is stripped from all operator recursively, and the `update` is applied to it.
-  * `returnUpdatedDocs` (defaults to `false`, not MongoDB-compatible) if set to true and update is not an upsert, will return the array of documents matched by the find query and updated. Updated documents will be returned even if the update did not actually modify them.
+  * `multi` (default: `false`) which allows the modification of several documents if set to true
+  * `upsert` (defaults: `false`) if you want to insert a new document corresponding to the `update` rules if your `query` doesn't match anything. If your `update` is a simple object with no modifiers, it is the inserted document. In the other case, the `query` is stripped from all operator recursively, and the `update` is applied to it.
+  * `returnUpdatedDocs` (defaults: `false`, not MongoDB-compatible) if set to true and update is not an upsert, will return the array of documents matched by the find query and updated. Updated documents will be returned even if the update did not actually modify them.
 * `callback` (optional) signature: `(err, numAffected, affectedDocuments, upsert)`. **Warning**: the API was changed between v1.7.4 and v1.8. Please refer to the <a href="https://github.com/louischatriot/nedb/wiki/Change-log" target="_blank">change log</a> to see the change.
   * For an upsert, `affectedDocuments` contains the inserted document and the `upsert` flag is set to `true`.
   * For a standard update with `returnUpdatedDocs` flag set to `false`, `affectedDocuments` is not set.
@@ -652,30 +647,7 @@ db.ensureIndex({ fieldName: 'expirationDate', expireAfterSeconds: 0 }, function 
 
 ```
 
-**Note:** the `ensureIndex` function creates the index synchronously, so it's best to use it at application startup. It's quite fast so it doesn't increase startup time much (35 ms for a collection containing 10,000 documents).
-
-
-## Browser version
-The browser version and its minified counterpart are in the `browser-version/out` directory. You only need to require `nedb.js` or `nedb.min.js` in your HTML file and the global object `Nedb` can be used right away, with the same API as the server version:
-
-```
-<script src="nedb.min.js"></script>
-<script>
-  var db = new Nedb();   // Create an in-memory only datastore
-  
-  db.insert({ planet: 'Earth' }, function (err) {
-   db.find({}, function (err, docs) {
-     // docs contains the two planets Earth and Mars
-   });
-  });
-</script>
-```
-
-If you specify a `filename`, the database will be persistent, and automatically select the best storage method available (IndexedDB, WebSQL or localStorage) depending on the browser. In most cases that means a lot of data can be stored, typically in hundreds of MB. **WARNING**: the storage system changed between v1.3 and v1.4 and is NOT back-compatible! Your application needs to resync client-side when you upgrade NeDB.
-
-NeDB is compatible with all major browsers: Chrome, Safari, Firefox, IE9+. Tests are in the `browser-version/test` directory (files `index.html` and `testPersistence.html`).
-
-If you fork and modify nedb, you can build the browser version from the sources, the build script is `browser-version/build.js`.
+> **Note:** the `ensureIndex` function creates the index **synchronously**, so it's best to use it at application startup. It's quite fast so it doesn't increase startup time much (35 ms for a collection containing 10,000 documents).
 
 
 ## Performance
@@ -693,15 +665,17 @@ A copy of the whole database is kept in memory. This is not much on the
 expected kind of datasets (20MB for 10,000 2KB documents).
 
 ## Use in other services
-* <a href="https://github.com/louischatriot/connect-nedb-session"
-  target="_blank">connect-nedb-session</a> is a session store for
-Connect and Express, backed by nedb
+* [connect-nedb-session](https://github.com/louischatriot/connect-nedb-session) is a session store for
+Connect and Express, backed by nedb (_but unmaintained & incompatible with this fork_)
 * If you mostly use NeDB for logging purposes and don't want the memory footprint of your application to grow too large, you can use <a href="https://github.com/louischatriot/nedb-logger" target="_blank">NeDB Logger</a> to insert documents in a NeDB-readable database
 * If you've outgrown NeDB, switching to MongoDB won't be too hard as it is the same API. Use <a href="https://github.com/louischatriot/nedb-to-mongodb" target="_blank">this utility</a> to transfer the data from a NeDB database to a MongoDB collection
 * An ODM for NeDB: <a href="https://github.com/scottwrobinson/camo" target="_blank">Camo</a>
 
 ## Pull requests
-**Important: I consider NeDB to be feature-complete, i.e. it does everything I think it should and nothing more. As a general rule I will not accept pull requests anymore, except for bugfixes (of course) or if I get convinced I overlook a strong usecase. Please make sure to open an issue before spending time on any PR.**
+**Important:** The creator considers NeDB to be feature-complete, i.e. it does everything he thinks it should 
+and nothing more. 
+* Pull requests for bugfixes or important use cases are welcome though.
+* Please make sure to open an issue before spending time on any PR.
 
 If you submit a pull request, thanks! There are a couple rules to follow though to make it manageable:
 * The pull request should be atomic, i.e. contain only one feature. If it contains more, please submit multiple pull requests. Reviewing massive, 1000 loc+ pull requests is extremely hard.
@@ -719,10 +693,7 @@ If you report a bug, thank you! That said for the process to be manageable pleas
 * It should use assertions to showcase the expected vs actual behavior and be hysteresis-proof. It's quite simple in fact, see this example: https://gist.github.com/louischatriot/220cf6bd29c7de06a486
 * Simplify as much as you can. Strip all your application-specific code. Most of the time you will see that there is no bug but an error in your code :)
 * 50 lines max. If you need more, read the above point and rework your bug report. If you're **really** convinced you need more, please explain precisely in the issue.
-* The code should be Javascript, not Coffeescript.
-
-### Bitcoins
-You don't have time? You can support NeDB by sending bitcoins to this address: 1dDZLnWpBbodPiN8sizzYrgaz5iahFyb1
+* The code should be Javascript, not Coffeescript, not Typescript.
 
 
 ## License 

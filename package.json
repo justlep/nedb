@@ -1,16 +1,13 @@
 {
-  "name": "nedb",
-  "version": "1.8.0",
+  "name": "@justlep/nedb",
+  "version": "2.0.0",
   "type": "module",
   "engines": {
     "node": ">=14.17.6"
   },
-  "author": {
-    "name": "Louis Chatriot",
-    "email": "louis.chatriot@gmail.com"
-  },
+  "author": "Lennart Pegel <github@justlep.net>",
   "contributors": [
-    "Louis Chatriot"
+    "Louis Chatriot <louis.chatriot@gmail.com>"
   ],
   "description": "File-based embedded data store for node.js",
   "keywords": [
@@ -18,13 +15,13 @@
     "datastore",
     "embedded"
   ],
-  "homepage": "https://github.com/louischatriot/nedb",
+  "homepage": "https://github.com/justlep/nedb",
   "repository": {
     "type": "git",
-    "url": "git@github.com:louischatriot/nedb.git"
+    "url": "https://github.com/justlep/nedb.git"
   },
   "dependencies": {
-    "@justlep/binary-search-tree": "^1.0.1",
+    "@justlep/binary-search-tree": "^1.0.2",
     "async": "^3.2.3"
   },
   "devDependencies": {
@@ -36,12 +33,12 @@
   },
   "scripts": {
     "test": "mocha --reporter spec --timeout 10000 test/",
-    "lint": "eslint --max-warnings 5 --ext js,cjs lib/ test_lac index.js"
+    "lint": "eslint --max-warnings 5 --ext js lib/ test_lac index.js"
   },
-  "main": "index",
-  "browser": {
-    "./lib/customUtils.js": "./browser-version/browser-specific/lib/customUtils.js",
-    "./lib/storage.js": "./browser-version/browser-specific/lib/storage.js"
-  },
-  "license": "SEE LICENSE IN LICENSE"
+  "main": "index.js",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
 }
