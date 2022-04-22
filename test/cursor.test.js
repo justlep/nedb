@@ -3,10 +3,10 @@ import path from 'path';
 import async from 'async';
 import {Datastore} from '../lib/datastore.js';
 import {Cursor} from '../lib/cursor.js';
-import {assert, expect} from './chaiHelper.js';
+import {assert, expect, pp} from './utils.js';
 import {ensureDirectoryExists} from '../lib/storage.js';
 
-const testDb = 'workspace/test.db';
+const testDb = pp('test.db');
 
 describe('Cursor', function () {
   let d;

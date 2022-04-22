@@ -2,12 +2,11 @@ import async from 'async';
 import * as commonUtilities from './commonUtilities.js';
 import {getConfiguration} from './commonUtilities.js';
 
-const DB_FILENAME = 'workspace/update.bench.db';
 
-let {d, n, withIndex, profiler} = getConfiguration(DB_FILENAME, 'UPDATE BENCH');
+let {d, n, withIndex, profiler, dbFilePath} = getConfiguration('update');
 
 async.waterfall([
-    async.apply(commonUtilities.prepareDb, DB_FILENAME), function (cb) {
+    async.apply(commonUtilities.prepareDb, dbFilePath), function (cb) {
         d.loadDatabase(function (err) {
             if (err) {
                 return cb(err);

@@ -1,4 +1,4 @@
-import './chaiHelper.js';
+import './utils.js';
 import {generateUid} from '../lib/customUtils.js';
 
 

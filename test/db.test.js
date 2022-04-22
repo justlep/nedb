@@ -2,13 +2,13 @@ import fs from 'fs';
 import path from 'path';
 import async from 'async';
 import {Datastore} from '../lib/datastore.js';
-import {assert, expect} from './chaiHelper.js';
+import {assert, expect, pp} from './utils.js';
 import {ensureDirectoryExists} from '../lib/storage.js';
 import {deserialize, serialize} from '../lib/model.js';
 
 const reloadTimeUpperBound = 60;   // In ms, an upper bound for the reload time used to check createdAt and updatedAt
 
-const testDb = 'workspace/test.db';
+const testDb = pp('test.db');
 
 describe('Database', function () {
   var d;
@@ -47,7 +47,7 @@ describe('Database', function () {
 
     it('Can autoload a database and query it right away', function (done) {
       var fileStr = serialize({ _id: '1', a: 5, planet: 'Earth' }) + '\n' + serialize({ _id: '2', a: 5, planet: 'Mars' }) + '\n'
-        , autoDb = 'workspace/auto.db'
+        , autoDb = pp('auto.db')
         , db
         ;
 
@@ -63,7 +63,7 @@ describe('Database', function () {
 
     it('Throws if autoload fails', function (done) {
       var fileStr = serialize({ _id: '1', a: 5, planet: 'Earth' }) + '\n' + serialize({ _id: '2', a: 5, planet: 'Mars' }) + '\n' + '{"$$indexCreated":{"fieldName":"a","unique":true}}'
-        , autoDb = 'workspace/auto.db'
+        , autoDb = pp('auto.db')
         , db
         ;
 
@@ -2637,7 +2637,7 @@ describe('Database', function () {
     describe('Persisting indexes', function () {
 
       it('Indexes are persisted to a separate file and recreated upon reload', function (done) {
-        var persDb = "workspace/persistIndexes.db"
+        var persDb = pp('persistIndexes.db')
           , db
           ;
 
@@ -2691,7 +2691,7 @@ describe('Database', function () {
       });
 
       it('Indexes are persisted with their options and recreated even if some db operation happen between loads', function (done) {
-        var persDb = "workspace/persistIndexes.db"
+        var persDb = pp('persistIndexes.db')
           , db
         ;
 
@@ -2771,7 +2771,7 @@ describe('Database', function () {
       });
 
       it('Indexes can also be removed and the remove persisted', function (done) {
-        var persDb = "workspace/persistIndexes.db"
+        var persDb = pp('persistIndexes.db')
           , db
         ;
 

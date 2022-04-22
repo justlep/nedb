@@ -1,6 +1,6 @@
 import fs from 'fs';
 import {Datastore} from '../lib/datastore.js';
-import {assert, expect} from './chaiHelper.js';
+import {assert, expect, pp} from './utils.js';
 import * as model from '../lib/model.js';
 import {isDate} from '../lib/customUtils.js';
 import {checkObject, cloneDeep, deserialize, matchQuery, modifyDoc, serialize} from '../lib/model.js';
@@ -134,16 +134,16 @@ describe('Model', function () {
         , badString = "world\r\nearth\nother\rline"
       ;
 
-      if (fs.existsSync('workspace/test1.db')) { fs.unlinkSync('workspace/test1.db'); }
-      fs.existsSync('workspace/test1.db').should.equal(false);
-      db1 = new Datastore({ filename: 'workspace/test1.db' });
+      if (fs.existsSync(pp('test1.db'))) { fs.unlinkSync(pp('test1.db')); }
+      fs.existsSync(pp('test1.db')).should.equal(false);
+      db1 = new Datastore({ filename: pp('test1.db') });
 
       db1.loadDatabase(function (err) {
         assert.isNull(err);
         db1.insert({ hello: badString }, function (err) {
           assert.isNull(err);
 
-          db2 = new Datastore({ filename: 'workspace/test1.db' });
+          db2 = new Datastore({ filename: pp('test1.db') });
           db2.loadDatabase(function (err) {
             assert.isNull(err);
             db2.find({}, function (err, docs) {

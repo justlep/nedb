@@ -4,6 +4,7 @@ import {Datastore} from '../index.js';
 import {ensureDirectoryExists, fileExists} from '../lib/storage.js';
 import {program} from 'commander';
 import execTime from 'exec-time';
+import {resolveProjectPath} from '../test/utils.js';
 
 const executeAsap = setImmediate;
 
@@ -14,7 +15,11 @@ const executeAsap = setImmediate;
 /**
  * Configure the benchmark
  */
-export function getConfiguration(dbFilename, profilerName) {
+export function getConfiguration(configName) {
+    if (arguments.length !== 1 || !/^[a-z]+$/i.test(configName)) {
+        throw new Error('Invalid config name: ' + configName);
+    }
+    const dbFilePath = resolveProjectPath(`benchmarks/workspace/${configName}.bench.db`);
     program
         .option('-n --number [number]', 'Size of the collection to test on', parseInt)
         .option('-i --with-index', 'Use an index')
@@ -30,10 +35,11 @@ export function getConfiguration(dbFilename, profilerName) {
     console.log('----------------------------');
 
     return {
-        d: new Datastore({filename: dbFilename, inMemoryOnly: inMemory}),
-        profiler: new execTime(profilerName), 
+        d: new Datastore({filename: dbFilePath, inMemoryOnly: inMemory}),
+        profiler: new execTime(`${configName.toUpperCase()} BENCH`), 
         inMemory,
         withIndex,
+        dbFilePath,
         n: number,
         number
     };

@@ -4,6 +4,7 @@
 import * as fs from 'fs';
 import {_overrideWriteFile} from '../lib/storage.js';
 import {Datastore} from '../lib/datastore.js';
+import {pp} from '../test/utils.js';
 
 function rethrow() {
     // Only enable in debug mode. A backtrace uses ~1000 bytes of heap space and
@@ -127,6 +128,6 @@ _overrideWriteFile(function (path, data, options, callback_) {
 
 // End of fs modification
 
-const db = new Datastore({filename: 'workspace/lac.db'});
+const db = new Datastore({filename: pp('lac.db')});
 
 db.loadDatabase();

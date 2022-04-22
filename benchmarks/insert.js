@@ -2,12 +2,11 @@ import async from 'async';
 import * as commonUtilities from './commonUtilities.js';
 import {getConfiguration} from './commonUtilities.js';
 
-const DB_FILENAME = 'workspace/insert.bench.db';
 
-let {d, n, profiler, withIndex} = getConfiguration(DB_FILENAME, 'INSERT BENCH');
+let {d, n, profiler, withIndex, dbFilePath} = getConfiguration('insert');
 
 async.waterfall([
-    async.apply(commonUtilities.prepareDb, DB_FILENAME), (cb) => {
+    async.apply(commonUtilities.prepareDb, dbFilePath), (cb) => {
         d.loadDatabase(function (err) {
             if (err) {
                 return cb(err);

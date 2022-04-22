@@ -2,17 +2,11 @@ import async from 'async';
 import * as commonUtilities from './commonUtilities.js';
 import {getConfiguration} from './commonUtilities.js';
 
-const DB_FILENAME = 'workspace/ensureIndex.bench.db';
 
-let {d, n, profiler} = getConfiguration(DB_FILENAME, 'ENSUREINDEX BENCH');
-
-
-console.log('----------------------------');
-console.log('Test with ' + n + ' documents');
-console.log('----------------------------');
+let {d, n, profiler, dbFilePath} = getConfiguration('ensureIndex');
 
 async.waterfall([
-    async.apply(commonUtilities.prepareDb, DB_FILENAME), function (cb) {
+    async.apply(commonUtilities.prepareDb, dbFilePath), function (cb) {
         d.loadDatabase(function (err) {
             if (err) {
                 return cb(err);

@@ -1,5 +1,5 @@
 import {Index} from '../lib/indexes.js';
-import {assert} from './chaiHelper.js';
+import {assert} from './utils.js';
 
 describe('Indexes', function () {
 

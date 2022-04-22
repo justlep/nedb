@@ -1,9 +1,10 @@
 import fs from 'fs';
 import async from 'async';
 import {Datastore} from '../lib/datastore.js';
+import {pp, resolveProjectPath} from '../test/utils.js';
     
 const N = 64;   // Half the allowed file descriptors,
-const db = new Datastore({filename: './workspace/openfds.db', autoload: true});
+const db = new Datastore({filename: pp('openfds.db'), autoload: true});
 
 let i,
     fds;
@@ -25,7 +26,7 @@ async.waterfall([
     function (cb) {
         i = 0;
         fds = [];
-        multipleOpen('./test_lac/openFdsTestFile', 2 * N + 1, function (err) {
+        multipleOpen(resolveProjectPath('test_lac/openFdsTestFile'), 2 * N + 1, function (err) {
             if (!err) {
                 console.log('No error occured while opening a file too many times');
             }
@@ -38,7 +39,7 @@ async.waterfall([
     function (cb) {
         i = 0;
         fds = [];
-        multipleOpen('./test_lac/openFdsTestFile2', N, function (err) {
+        multipleOpen(resolveProjectPath('test_lac/openFdsTestFile2'), N, function (err) {
             if (err) {
                 console.log('An unexpected error occured when opening file not too many times: ' + err);
             }

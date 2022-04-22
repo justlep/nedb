@@ -3,12 +3,12 @@ import path from 'path';
 import async from 'async';
 import {Datastore} from '../lib/datastore.js';
 import {Persistence} from '../lib/persistence.js';
-import {assert, expect} from './chaiHelper.js';
+import {assert, expect, pp, resolveProjectPath} from './utils.js';
 import {ensureDatafileIntegrity, ensureDirectoryExists, ensureFileDoesntExist} from '../lib/storage.js';
 import {fork, execFile} from 'child_process';
 import {deserialize, serialize} from '../lib/model.js';
 
-const testDb = 'workspace/test.db';
+const testDb = pp('test.db');
 
 describe('Persistence', function () {
   var d;
@@ -266,7 +266,7 @@ describe('Persistence', function () {
   });
 
   it("When treating raw data, refuse to proceed if too much data is corrupt, to avoid data loss", function (done) {
-    var corruptTestFilename = 'workspace/corruptTest.db'
+    var corruptTestFilename = pp('corruptTest.db')
       , fakeData = '{"_id":"one","hello":"world"}\n' + 'Some corrupt data\n' + '{"_id":"two","hello":"earth"}\n' + '{"_id":"three","hello":"you"}\n'
       , d
     ;
@@ -310,7 +310,7 @@ describe('Persistence', function () {
       , bd = function (s) { return s.substring(7, s.length - 6); }
 
     it("Declaring only one hook will throw an exception to prevent data loss", function (done) {
-      var hookTestFilename = 'workspace/hookTest.db'
+      var hookTestFilename = pp('hookTest.db')
       ensureFileDoesntExist(hookTestFilename, function () {
         fs.writeFileSync(hookTestFilename, "Some content", "utf8");
 
@@ -337,7 +337,7 @@ describe('Persistence', function () {
     });
 
     it("Declaring two hooks that are not reverse of one another will cause an exception to prevent data loss", function (done) {
-      var hookTestFilename = 'workspace/hookTest.db'
+      var hookTestFilename = pp('hookTest.db')
       ensureFileDoesntExist(hookTestFilename, function () {
         fs.writeFileSync(hookTestFilename, "Some content", "utf8");
 
@@ -356,7 +356,7 @@ describe('Persistence', function () {
     });
 
     it("A serialization hook can be used to transform data before writing new state to disk", function (done) {
-      var hookTestFilename = 'workspace/hookTest.db'
+      var hookTestFilename = pp('hookTest.db')
       ensureFileDoesntExist(hookTestFilename, function () {
         var d = new Datastore({ filename: hookTestFilename, autoload: true
           , afterSerialization: as
@@ -435,7 +435,7 @@ describe('Persistence', function () {
     });
 
     it("Use serialization hook when persisting cached database or compacting", function (done) {
-      var hookTestFilename = 'workspace/hookTest.db'
+      var hookTestFilename = pp('hookTest.db')
       ensureFileDoesntExist(hookTestFilename, function () {
         var d = new Datastore({ filename: hookTestFilename, autoload: true
           , afterSerialization: as
@@ -497,7 +497,7 @@ describe('Persistence', function () {
     });
 
     it("Deserialization hook is correctly used when loading data", function (done) {
-      var hookTestFilename = 'workspace/hookTest.db'
+      var hookTestFilename = pp('hookTest.db')
       ensureFileDoesntExist(hookTestFilename, function () {
         var d = new Datastore({ filename: hookTestFilename, autoload: true
           , afterSerialization: as
@@ -548,75 +548,75 @@ describe('Persistence', function () {
   describe('Prevent dataloss when persisting data', function () {
 
     it('Creating a datastore with in memory as true and a bad filename wont cause an error', function () {
-      new Datastore({ filename: 'workspace/bad.db~', inMemoryOnly: true });
+      new Datastore({ filename: pp('bad.db~'), inMemoryOnly: true });
     })
 
     it('Creating a persistent datastore with a bad filename will cause an error', function () {
-      (function () { new Datastore({ filename: 'workspace/bad.db~' }); }).should.throw();
+      (function () { new Datastore({ filename: pp('bad.db~') }); }).should.throw();
     })
 
     it('If no file exists, ensureDatafileIntegrity creates an empty datafile', function (done) {
-      var p = new Persistence({ db: { inMemoryOnly: false, filename: 'workspace/it.db' } });
+      var p = new Persistence({ db: { inMemoryOnly: false, filename: pp('it.db') } });
 
-      if (fs.existsSync('workspace/it.db')) { fs.unlinkSync('workspace/it.db'); }
-      if (fs.existsSync('workspace/it.db~')) { fs.unlinkSync('workspace/it.db~'); }
+      if (fs.existsSync(pp('it.db'))) { fs.unlinkSync(pp('it.db')); }
+      if (fs.existsSync(pp('it.db~'))) { fs.unlinkSync(pp('it.db~')); }
 
-      fs.existsSync('workspace/it.db').should.equal(false);
-      fs.existsSync('workspace/it.db~').should.equal(false);
+      fs.existsSync(pp('it.db')).should.equal(false);
+      fs.existsSync(pp('it.db~')).should.equal(false);
 
       ensureDatafileIntegrity(p.filename, function (err) {
         assert.isNull(err);
 
-        fs.existsSync('workspace/it.db').should.equal(true);
-        fs.existsSync('workspace/it.db~').should.equal(false);
+        fs.existsSync(pp('it.db')).should.equal(true);
+        fs.existsSync(pp('it.db~')).should.equal(false);
 
-        fs.readFileSync('workspace/it.db', 'utf8').should.equal('');
+        fs.readFileSync(pp('it.db'), 'utf8').should.equal('');
 
         done();
       });
     });
 
     it('If only datafile exists, ensureDatafileIntegrity will use it', function (done) {
-      var p = new Persistence({ db: { inMemoryOnly: false, filename: 'workspace/it.db' } });
+      var p = new Persistence({ db: { inMemoryOnly: false, filename: pp('it.db') } });
 
-      if (fs.existsSync('workspace/it.db')) { fs.unlinkSync('workspace/it.db'); }
-      if (fs.existsSync('workspace/it.db~')) { fs.unlinkSync('workspace/it.db~'); }
+      if (fs.existsSync(pp('it.db'))) { fs.unlinkSync(pp('it.db')); }
+      if (fs.existsSync(pp('it.db~'))) { fs.unlinkSync(pp('it.db~')); }
 
-      fs.writeFileSync('workspace/it.db', 'something', 'utf8');
+      fs.writeFileSync(pp('it.db'), 'something', 'utf8');
 
-      fs.existsSync('workspace/it.db').should.equal(true);
-      fs.existsSync('workspace/it.db~').should.equal(false);
+      fs.existsSync(pp('it.db')).should.equal(true);
+      fs.existsSync(pp('it.db~')).should.equal(false);
 
       ensureDatafileIntegrity(p.filename, function (err) {
         assert.isNull(err);
 
-        fs.existsSync('workspace/it.db').should.equal(true);
-        fs.existsSync('workspace/it.db~').should.equal(false);
+        fs.existsSync(pp('it.db')).should.equal(true);
+        fs.existsSync(pp('it.db~')).should.equal(false);
 
-        fs.readFileSync('workspace/it.db', 'utf8').should.equal('something');
+        fs.readFileSync(pp('it.db'), 'utf8').should.equal('something');
 
         done();
       });
     });
 
     it('If temp datafile exists and datafile doesnt, ensureDatafileIntegrity will use it (cannot happen except upon first use)', function (done) {
-      var p = new Persistence({ db: { inMemoryOnly: false, filename: 'workspace/it.db' } });
+      var p = new Persistence({ db: { inMemoryOnly: false, filename: pp('it.db') } });
 
-      if (fs.existsSync('workspace/it.db')) { fs.unlinkSync('workspace/it.db'); }
-      if (fs.existsSync('workspace/it.db~')) { fs.unlinkSync('workspace/it.db~~'); }
+      if (fs.existsSync(pp('it.db'))) { fs.unlinkSync(pp('it.db')); }
+      if (fs.existsSync(pp('it.db~'))) { fs.unlinkSync(pp('it.db~~')); }
 
-      fs.writeFileSync('workspace/it.db~', 'something', 'utf8');
+      fs.writeFileSync(pp('it.db~'), 'something', 'utf8');
 
-      fs.existsSync('workspace/it.db').should.equal(false);
-      fs.existsSync('workspace/it.db~').should.equal(true);
+      fs.existsSync(pp('it.db')).should.equal(false);
+      fs.existsSync(pp('it.db~')).should.equal(true);
 
       ensureDatafileIntegrity(p.filename, function (err) {
         assert.isNull(err);
 
-        fs.existsSync('workspace/it.db').should.equal(true);
-        fs.existsSync('workspace/it.db~').should.equal(false);
+        fs.existsSync(pp('it.db')).should.equal(true);
+        fs.existsSync(pp('it.db~')).should.equal(false);
 
-        fs.readFileSync('workspace/it.db', 'utf8').should.equal('something');
+        fs.readFileSync(pp('it.db'), 'utf8').should.equal('something');
 
         done();
       });
@@ -624,24 +624,24 @@ describe('Persistence', function () {
 
     // Technically it could also mean the write was successful but the rename wasn't, but there is in any case no guarantee that the data in the temp file is whole so we have to discard the whole file
     it('If both temp and current datafiles exist, ensureDatafileIntegrity will use the datafile, as it means that the write of the temp file failed', function (done) {
-      var theDb = new Datastore({ filename: 'workspace/it.db' });
+      var theDb = new Datastore({ filename: pp('it.db') });
 
-      if (fs.existsSync('workspace/it.db')) { fs.unlinkSync('workspace/it.db'); }
-      if (fs.existsSync('workspace/it.db~')) { fs.unlinkSync('workspace/it.db~'); }
+      if (fs.existsSync(pp('it.db'))) { fs.unlinkSync(pp('it.db')); }
+      if (fs.existsSync(pp('it.db~'))) { fs.unlinkSync(pp('it.db~')); }
 
-      fs.writeFileSync('workspace/it.db', '{"_id":"0","hello":"world"}', 'utf8');
-      fs.writeFileSync('workspace/it.db~', '{"_id":"0","hello":"other"}', 'utf8');
+      fs.writeFileSync(pp('it.db'), '{"_id":"0","hello":"world"}', 'utf8');
+      fs.writeFileSync(pp('it.db~'), '{"_id":"0","hello":"other"}', 'utf8');
 
-      fs.existsSync('workspace/it.db').should.equal(true);
-      fs.existsSync('workspace/it.db~').should.equal(true);
+      fs.existsSync(pp('it.db')).should.equal(true);
+      fs.existsSync(pp('it.db~')).should.equal(true);
 
       ensureDatafileIntegrity(theDb.persistence.filename, function (err) {
         assert.isNull(err);
 
-        fs.existsSync('workspace/it.db').should.equal(true);
-        fs.existsSync('workspace/it.db~').should.equal(true);
+        fs.existsSync(pp('it.db')).should.equal(true);
+        fs.existsSync(pp('it.db~')).should.equal(true);
 
-        fs.readFileSync('workspace/it.db', 'utf8').should.equal('{"_id":"0","hello":"world"}');
+        fs.readFileSync(pp('it.db'), 'utf8').should.equal('{"_id":"0","hello":"world"}');
 
         theDb.loadDatabase(function (err) {
           assert.isNull(err);
@@ -649,8 +649,8 @@ describe('Persistence', function () {
             assert.isNull(err);
             docs.length.should.equal(1);
             docs[0].hello.should.equal("world");
-            fs.existsSync('workspace/it.db').should.equal(true);
-            fs.existsSync('workspace/it.db~').should.equal(false);
+            fs.existsSync(pp('it.db')).should.equal(true);
+            fs.existsSync(pp('it.db~')).should.equal(false);
             done();
           });
         });
@@ -735,7 +735,7 @@ describe('Persistence', function () {
     });
 
     it('persistCachedDatabase should update the contents of the datafile and leave a clean state even if there is a temp datafile', function (done) {
-      var dbFile = 'workspace/test2.db', theDb;
+      var dbFile = pp('test2.db'), theDb;
 
       if (fs.existsSync(dbFile)) { fs.unlinkSync(dbFile); }
       if (fs.existsSync(dbFile + '~')) { fs.unlinkSync(dbFile + '~'); }
@@ -755,7 +755,7 @@ describe('Persistence', function () {
     });
 
     it('Persistence works as expected when everything goes fine', function (done) {
-      var dbFile = 'workspace/test2.db', theDb, theDb2, doc1, doc2;
+      var dbFile = pp('test2.db'), theDb, theDb2, doc1, doc2;
 
       async.waterfall([
           async.apply(ensureFileDoesntExist, dbFile)
@@ -835,34 +835,34 @@ describe('Persistence', function () {
       var N = 500, toWrite = "", i, doc_i;
 
       // Ensuring the state is clean
-      if (fs.existsSync('workspace/lac.db')) { fs.unlinkSync('workspace/lac.db'); }
-      if (fs.existsSync('workspace/lac.db~')) { fs.unlinkSync('workspace/lac.db~'); }
+      if (fs.existsSync(pp('lac.db'))) { fs.unlinkSync(pp('lac.db')); }
+      if (fs.existsSync(pp('lac.db~'))) { fs.unlinkSync(pp('lac.db~')); }
 
       // Creating a db file with 150k records (a bit long to load)
       for (i = 0; i < N; i += 1) {
         toWrite += serialize({ _id: 'anid_' + i, hello: 'world' }) + '\n';
       }
-      fs.writeFileSync('workspace/lac.db', toWrite, 'utf8');
+      fs.writeFileSync(pp('lac.db'), toWrite, 'utf8');
 
-      var datafileLength = fs.readFileSync('workspace/lac.db', 'utf8').length;
+      var datafileLength = fs.readFileSync(pp('lac.db'), 'utf8').length;
 
       // Loading it in a separate process that we will crash before finishing the loadDatabase
-      fork('test_lac/loadAndCrash.test').on('exit', function (code) {
+      fork(resolveProjectPath('test_lac/loadAndCrash.test')).on('exit', function (code) {
         code.should.equal(1);   // See test_lac/loadAndCrash.test.js
 
-        fs.existsSync('workspace/lac.db').should.equal(true);
-        fs.existsSync('workspace/lac.db~').should.equal(true);
-        fs.readFileSync('workspace/lac.db', 'utf8').length.should.equal(datafileLength);
-        fs.readFileSync('workspace/lac.db~', 'utf8').length.should.equal(5000);
+        fs.existsSync(pp('lac.db')).should.equal(true);
+        fs.existsSync(pp('lac.db~')).should.equal(true);
+        fs.readFileSync(pp('lac.db'), 'utf8').length.should.equal(datafileLength);
+        fs.readFileSync(pp('lac.db~'), 'utf8').length.should.equal(5000);
 
         // Reload database without a crash, check that no data was lost and fs state is clean (no temp file)
-        var db = new Datastore({ filename: 'workspace/lac.db' });
+        var db = new Datastore({ filename: pp('lac.db') });
         db.loadDatabase(function (err) {
           assert.isNull(err);
 
-          fs.existsSync('workspace/lac.db').should.equal(true);
-          fs.existsSync('workspace/lac.db~').should.equal(false);
-          fs.readFileSync('workspace/lac.db', 'utf8').length.should.equal(datafileLength);
+          fs.existsSync(pp('lac.db')).should.equal(true);
+          fs.existsSync(pp('lac.db~')).should.equal(false);
+          fs.readFileSync(pp('lac.db'), 'utf8').length.should.equal(datafileLength);
 
           db.find({}, function (err, docs) {
             docs.length.should.equal(N);
@@ -880,7 +880,7 @@ describe('Persistence', function () {
     // Not run on Windows as there is no clean way to set maximum file descriptors. Not an issue as the code itself is tested.
     it("Cannot cause EMFILE errors by opening too many file descriptors", function (done) {
       if (process.platform === 'win32' || process.platform === 'win64') { return done(); }
-      execFile('test_lac/openFdsLaunch.sh', function (err, stdout, stderr) {
+      execFile(resolveProjectPath('test_lac/openFdsLaunch.sh'), function (err, stdout, stderr) {
         if (err) { return done(err); }
 
         // The subprocess will not output anything to stdout unless part of the test fails
@@ -898,20 +898,20 @@ describe('Persistence', function () {
   describe('ensureFileDoesntExist', function () {
 
     it('Doesnt do anything if file already doesnt exist', function (done) {
-      ensureFileDoesntExist('workspace/nonexisting', function (err) {
+      ensureFileDoesntExist(pp('nonexisting'), function (err) {
         assert.isNull(err);
-        fs.existsSync('workspace/nonexisting').should.equal(false);
+        fs.existsSync(pp('nonexisting')).should.equal(false);
         done();
       });
     });
 
     it('Deletes file if it exists', function (done) {
-      fs.writeFileSync('workspace/existing', 'hello world', 'utf8');
-      fs.existsSync('workspace/existing').should.equal(true);
+      fs.writeFileSync(pp('existing'), 'hello world', 'utf8');
+      fs.existsSync(pp('existing')).should.equal(true);
 
-      ensureFileDoesntExist('workspace/existing', function (err) {
+      ensureFileDoesntExist(pp('existing'), function (err) {
         assert.isNull(err);
-        fs.existsSync('workspace/existing').should.equal(false);
+        fs.existsSync(pp('existing')).should.equal(false);
         done();
       });
     });
