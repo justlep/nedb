@@ -652,11 +652,15 @@ db.ensureIndex({ fieldName: 'expirationDate', expireAfterSeconds: 0 }, function 
 
 ## Performance
 ### Speed
-NeDB is not intended to be a replacement of large-scale databases such as MongoDB, and as such was not designed for speed. That said, it is still pretty fast on the expected datasets, especially if you use indexing. On a typical, not-so-fast dev machine, for a collection containing 10,000 documents, with indexing:  
-* Insert: **10,680 ops/s**
-* Find: **43,290 ops/s**
-* Update: **8,000 ops/s**
-* Remove: **11,750 ops/s**  
+NeDB is not intended to be a replacement of large-scale databases such as MongoDB, and as such was not designed for speed. 
+That said, it is still pretty fast on the expected datasets, especially if you use indexing. 
+
+Measurements for a collection of 10,000 documents, indexing and persistence enabled (Intel i7 6700 @ 3.4 Ghz):  
+* Insert: **5,707 ops/s**
+* Find: **71,428 ops/s**
+* FindOne: **57,471 ops/s**
+* Update: **6,289 ops/s**
+* Remove: **8,500 ops/s**  
 
 You can run these simple benchmarks by executing the scripts in the `benchmarks` folder. Run them with the `--help` flag to see how they work.
 
