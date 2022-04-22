@@ -34,7 +34,7 @@
   },
   "scripts": {
     "test": "mocha --reporter spec --timeout 10000 test/",
-    "lint": "eslint --max-warnings 5 --ext js lib/ test_lac index.js"
+    "lint": "eslint --max-warnings 5 --ext js lib/ benchmarks/ test_lac/ index.js"
   },
   "main": "index.js",
   "license": "MIT",
