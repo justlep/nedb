@@ -19,6 +19,8 @@ API is a subset of MongoDB's and it's <a href="#speed">plenty fast</a>.
 * removed browser version (including bower)
 * removed Node Webkit-related code, including `nodeWebkitAppName` parameter of `Datastore` constructor
 * no more CommonJS
+* `new Datastore(options)` requires an object, disallows string
+
 
 ## Support the original NeDB creator
 
