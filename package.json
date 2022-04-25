@@ -21,10 +21,10 @@
     "url": "https://github.com/justlep/nedb.git"
   },
   "dependencies": {
-    "@justlep/binary-search-tree": "^1.0.2",
-    "async": "^3.2.3"
+    "@justlep/binary-search-tree": "^1.0.2"
   },
   "devDependencies": {
+    "async": "^3.2.3",
     "chai": "^4.3.6",
     "commander": "^9.2.0",
     "eslint": "^8.13.0",
