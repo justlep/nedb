@@ -660,7 +660,7 @@ NeDB is not intended to be a replacement of large-scale databases such as MongoD
 That said, it is still pretty fast on the expected datasets, especially if you use indexing. 
 
 Measurements for a collection of 10,000 documents, indexing and persistence enabled (Intel i7 6700 @ 3.4 Ghz):  
-* Insert: **5,707 ops/s**
+* Insert: **6,053 ops/s**
 * Find: **71,428 ops/s**
 * FindOne: **57,471 ops/s**
 * Update: **6,289 ops/s**
