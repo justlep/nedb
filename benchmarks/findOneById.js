@@ -3,7 +3,7 @@ import * as commonUtilities from './commonUtilities.js';
 import {getConfiguration, pause500} from './commonUtilities.js';
 
 
-let {d, n, profiler, withIndex, dbFilePath} = getConfiguration('findOne');
+let {d, n, profiler, withIndex, dbFilePath} = getConfiguration('findOneById');
 
 async.waterfall([
     async.apply(commonUtilities.prepareDb, dbFilePath), function (cb) {
@@ -12,8 +12,9 @@ async.waterfall([
                 return cb(err);
             }
             if (withIndex) {
-                d.ensureIndex({fieldName: 'docNumber'});
+                // d.ensureIndex({fieldName: 'docNumber'});
             }
+            
             cb();
         });
     },
@@ -23,7 +24,7 @@ async.waterfall([
     },
     async.apply(commonUtilities.insertDocs, d, n, profiler),
     pause500,
-    async.apply(commonUtilities.findOneDoc, d, n, profiler)
+    async.apply(commonUtilities.findOneDocById, d, n, profiler)
 ], function (err) {
     profiler.step('Benchmark finished');
 

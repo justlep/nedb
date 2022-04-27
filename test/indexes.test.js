@@ -1,5 +1,7 @@
-import {Index} from '../lib/indexes.js';
-import {assert} from './utils.js';
+import {Index} from '../lib/index-basic.js';
+import {assert, expect} from './utils.js';
+import {NedbIndex} from '../lib/index-interface.js';
+import {UniqueStringIndex} from '../lib/index-uniqueString.js';
 
 describe('Indexes', function () {
 
@@ -17,7 +19,7 @@ describe('Indexes', function () {
       idx.insert(doc3);
 
       // The underlying BST now has 3 nodes which contain the docs where it's expected
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
       assert.deepEqual(idx.tree.search('hello'), [{ a: 5, tf: 'hello' }]);
       assert.deepEqual(idx.tree.search('world'), [{ a: 8, tf: 'world' }]);
       assert.deepEqual(idx.tree.search('bloup'), [{ a: 2, tf: 'bloup' }]);
@@ -34,7 +36,7 @@ describe('Indexes', function () {
         ;
 
       idx.insert(doc1);
-      idx.tree.getNumberOfKeys().should.equal(1);
+      idx._getNumberOfKeys().should.equal(1);
       (function () { idx.insert(doc1); }).should.throw();
     });
 
@@ -45,7 +47,7 @@ describe('Indexes', function () {
         ;
 
       idx.insert(doc1);
-      idx.tree.getNumberOfKeys().should.equal(1);
+      idx._getNumberOfKeys().should.equal(1);
       (function () { idx.insert(doc2); }).should.throw();
     });
 
@@ -57,7 +59,7 @@ describe('Indexes', function () {
 
       idx.insert(doc1);
       idx.insert(doc2);
-      idx.tree.getNumberOfKeys().should.equal(0);   // Docs are not indexed
+      idx._getNumberOfKeys().should.equal(0);   // Docs are not indexed
     });
 
     it('Works with dot notation', function () {
@@ -72,7 +74,7 @@ describe('Indexes', function () {
       idx.insert(doc3);
 
       // The underlying BST now has 3 nodes which contain the docs where it's expected
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
       assert.deepEqual(idx.tree.search('hello'), [doc1]);
       assert.deepEqual(idx.tree.search('world'), [doc2]);
       assert.deepEqual(idx.tree.search('bloup'), [doc3]);
@@ -90,7 +92,7 @@ describe('Indexes', function () {
         ;
 
       idx.insert([doc1, doc2, doc3]);
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
       assert.deepEqual(idx.tree.search('hello'), [doc1]);
       assert.deepEqual(idx.tree.search('world'), [doc2]);
       assert.deepEqual(idx.tree.search('bloup'), [doc3]);
@@ -109,7 +111,7 @@ describe('Indexes', function () {
       } catch (e) {
         e.errorType.should.equal('uniqueViolated');
       }
-      idx.tree.getNumberOfKeys().should.equal(0);
+      idx._getNumberOfKeys().should.equal(0);
       assert.deepEqual(idx.tree.search('hello'), []);
       assert.deepEqual(idx.tree.search('world'), []);
       assert.deepEqual(idx.tree.search('bloup'), []);
@@ -234,14 +236,14 @@ describe('Indexes', function () {
       idx.insert(doc2);
       idx.insert(doc3);
       idx.insert(doc4);
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
 
       idx.remove(doc1);
-      idx.tree.getNumberOfKeys().should.equal(2);
+      idx._getNumberOfKeys().should.equal(2);
       idx.tree.search('hello').length.should.equal(0);
 
       idx.remove(doc2);
-      idx.tree.getNumberOfKeys().should.equal(2);
+      idx._getNumberOfKeys().should.equal(2);
       idx.tree.search('world').length.should.equal(1);
       idx.tree.search('world')[0].should.equal(doc4);
     });
@@ -254,10 +256,10 @@ describe('Indexes', function () {
 
       idx.insert(doc1);
       idx.insert(doc2);
-      idx.tree.getNumberOfKeys().should.equal(0);
+      idx._getNumberOfKeys().should.equal(0);
 
       idx.remove(doc1);
-      idx.tree.getNumberOfKeys().should.equal(0);
+      idx._getNumberOfKeys().should.equal(0);
     });
 
     it('Works with dot notation', function () {
@@ -272,14 +274,14 @@ describe('Indexes', function () {
       idx.insert(doc2);
       idx.insert(doc3);
       idx.insert(doc4);
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
 
       idx.remove(doc1);
-      idx.tree.getNumberOfKeys().should.equal(2);
+      idx._getNumberOfKeys().should.equal(2);
       idx.tree.search('hello').length.should.equal(0);
 
       idx.remove(doc2);
-      idx.tree.getNumberOfKeys().should.equal(2);
+      idx._getNumberOfKeys().should.equal(2);
       idx.tree.search('world').length.should.equal(1);
       idx.tree.search('world')[0].should.equal(doc4);
     });
@@ -292,9 +294,9 @@ describe('Indexes', function () {
         ;
 
       idx.insert([doc1, doc2, doc3]);
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
       idx.remove([doc1, doc3]);
-      idx.tree.getNumberOfKeys().should.equal(1);
+      idx._getNumberOfKeys().should.equal(1);
       assert.deepEqual(idx.tree.search('hello'), []);
       assert.deepEqual(idx.tree.search('world'), [doc2]);
       assert.deepEqual(idx.tree.search('bloup'), []);
@@ -317,15 +319,15 @@ describe('Indexes', function () {
       idx.insert(doc1);
       idx.insert(doc2);
       idx.insert(doc3);
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
       assert.deepEqual(idx.tree.search('world'), [doc2]);
 
       idx.update(doc2, doc4);
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
       assert.deepEqual(idx.tree.search('world'), [doc4]);
 
       idx.update(doc1, doc5);
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
       assert.deepEqual(idx.tree.search('hello'), []);
       assert.deepEqual(idx.tree.search('changed'), [doc5]);
     });
@@ -342,7 +344,7 @@ describe('Indexes', function () {
       idx.insert(doc2);
       idx.insert(doc3);
 
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
       assert.deepEqual(idx.tree.search('hello'), [doc1]);
       assert.deepEqual(idx.tree.search('world'), [doc2]);
       assert.deepEqual(idx.tree.search('bloup'), [doc3]);
@@ -354,7 +356,7 @@ describe('Indexes', function () {
       }
 
       // No change
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
       assert.deepEqual(idx.tree.search('hello'), [doc1]);
       assert.deepEqual(idx.tree.search('world'), [doc2]);
       assert.deepEqual(idx.tree.search('bloup'), [doc3]);
@@ -373,11 +375,11 @@ describe('Indexes', function () {
       idx.insert(doc1);
       idx.insert(doc2);
       idx.insert(doc3);
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
 
       idx.update([{ oldDoc: doc1, newDoc: doc1b }, { oldDoc: doc2, newDoc: doc2b }, { oldDoc: doc3, newDoc: doc3b }]);
 
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
       idx.getMatching('world').length.should.equal(1);
       idx.getMatching('world')[0].should.equal(doc1b);
       idx.getMatching('changed').length.should.equal(1);
@@ -401,7 +403,7 @@ describe('Indexes', function () {
       idx.insert(doc1);
       idx.insert(doc2);
       idx.insert(doc3);
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
 
       try {
         idx.update([{ oldDoc: doc1, newDoc: doc1b }, { oldDoc: doc2, newDoc: doc2b }, { oldDoc: doc3, newDoc: doc3b }]);
@@ -409,7 +411,7 @@ describe('Indexes', function () {
         e.errorType.should.equal('uniqueViolated');
       }
 
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
       idx.getMatching('hello').length.should.equal(1);
       idx.getMatching('hello')[0].should.equal(doc1);
       idx.getMatching('world').length.should.equal(1);
@@ -423,7 +425,7 @@ describe('Indexes', function () {
         e.errorType.should.equal('uniqueViolated');
       }
 
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
       idx.getMatching('hello').length.should.equal(1);
       idx.getMatching('hello')[0].should.equal(doc1);
       idx.getMatching('world').length.should.equal(1);
@@ -443,11 +445,11 @@ describe('Indexes', function () {
       idx.insert(doc1);
       idx.insert(doc2);
       idx.insert(doc3);
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
       assert.deepEqual(idx.tree.search('world'), [doc2]);
 
       idx.update(doc2, noChange);   // No error thrown
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
       assert.deepEqual(idx.tree.search('world'), [noChange]);
     });
 
@@ -465,11 +467,11 @@ describe('Indexes', function () {
       idx.insert(doc1);
       idx.insert(doc2);
       idx.insert(doc3);
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
 
       idx.update(batchUpdate);
 
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
       idx.getMatching('world').length.should.equal(1);
       idx.getMatching('world')[0].should.equal(doc1b);
       idx.getMatching('changed').length.should.equal(1);
@@ -479,7 +481,7 @@ describe('Indexes', function () {
 
       idx.revertUpdate(batchUpdate);
 
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
       idx.getMatching('hello').length.should.equal(1);
       idx.getMatching('hello')[0].should.equal(doc1);
       idx.getMatching('world').length.should.equal(1);
@@ -490,7 +492,7 @@ describe('Indexes', function () {
       // Now a simple update
       idx.update(doc2, doc2b);
 
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
       idx.getMatching('hello').length.should.equal(1);
       idx.getMatching('hello')[0].should.equal(doc1);
       idx.getMatching('changed').length.should.equal(1);
@@ -500,7 +502,7 @@ describe('Indexes', function () {
 
       idx.revertUpdate(doc2, doc2b);
 
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
       idx.getMatching('hello').length.should.equal(1);
       idx.getMatching('hello')[0].should.equal(doc1);
       idx.getMatching('world').length.should.equal(1);
@@ -684,13 +686,13 @@ describe('Indexes', function () {
       idx.insert(doc2);
       idx.insert(doc3);
 
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
       idx.getMatching('hello').length.should.equal(1);
       idx.getMatching('world').length.should.equal(1);
       idx.getMatching('bloup').length.should.equal(1);
 
       idx.reset();
-      idx.tree.getNumberOfKeys().should.equal(0);
+      idx._getNumberOfKeys().should.equal(0);
       idx.getMatching('hello').length.should.equal(0);
       idx.getMatching('world').length.should.equal(0);
       idx.getMatching('bloup').length.should.equal(0);
@@ -708,13 +710,13 @@ describe('Indexes', function () {
       idx.insert(doc2);
       idx.insert(doc3);
 
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
       idx.getMatching('hello').length.should.equal(1);
       idx.getMatching('world').length.should.equal(1);
       idx.getMatching('bloup').length.should.equal(1);
 
       idx.reset(newDoc);
-      idx.tree.getNumberOfKeys().should.equal(1);
+      idx._getNumberOfKeys().should.equal(1);
       idx.getMatching('hello').length.should.equal(0);
       idx.getMatching('world').length.should.equal(0);
       idx.getMatching('bloup').length.should.equal(0);
@@ -733,13 +735,13 @@ describe('Indexes', function () {
       idx.insert(doc2);
       idx.insert(doc3);
 
-      idx.tree.getNumberOfKeys().should.equal(3);
+      idx._getNumberOfKeys().should.equal(3);
       idx.getMatching('hello').length.should.equal(1);
       idx.getMatching('world').length.should.equal(1);
       idx.getMatching('bloup').length.should.equal(1);
 
       idx.reset(newDocs);
-      idx.tree.getNumberOfKeys().should.equal(2);
+      idx._getNumberOfKeys().should.equal(2);
       idx.getMatching('hello').length.should.equal(0);
       idx.getMatching('world').length.should.equal(0);
       idx.getMatching('bloup').length.should.equal(0);
@@ -764,4 +766,30 @@ describe('Indexes', function () {
   });
 
 
+  describe('Interface NedbIndex', () => {
+
+      const testNedbIndexImplementation = (subClass, subClassName) => {
+          let methodNames = Object.getOwnPropertyNames(NedbIndex.prototype).filter(n => n !== 'constructor'),
+              totalInterfaceMethods = methodNames.length;
+
+          expect(totalInterfaceMethods).to.be.gt(7);
+          expect(Object.getOwnPropertyNames(subClass.prototype).length).to.be.gte(totalInterfaceMethods);
+          
+          for (const mName of methodNames) {
+              expect(typeof subClass.prototype[mName]).to.equal('function', `${subClassName} is not implementing NedbIndex.${mName}()`);
+          }
+          
+      };
+      
+      it('is implemented by Index', () => {
+          testNedbIndexImplementation(Index, 'Index');
+      });
+      
+      it('is implemented by UniqueStringIndex', () => {
+          testNedbIndexImplementation(UniqueStringIndex, 'UniqueStringIndex');
+      });
+  });
+  
 });
+
+

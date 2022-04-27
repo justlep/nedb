@@ -6,7 +6,8 @@ import {program} from 'commander';
 import execTime from 'exec-time';
 import {resolveProjectPath} from '../test/utils.js';
 
-const executeAsap = setImmediate;
+// to be used in waterfall for pausing it
+export const pause500 = cb => setTimeout(cb, 500);
 
 /**
  * Functions that are used in several benchmark tests
@@ -93,11 +94,7 @@ export function insertDocs(d, n, profiler, cb) {
             return cb();
         }
 
-        d.insert({docNumber: order[i]}, function (err) {
-            executeAsap(function () {
-                runFrom(i + 1);
-            });
-        });
+        d.insert({docNumber: order[i]}, err => runFrom(i + 1));  // rather recurse than having inconsistent delays with setImmediate 
     }
 
     runFrom(0);
@@ -123,9 +120,7 @@ export function findDocs(d, n, profiler, cb) {
             if (docs.length !== 1 || docs[0].docNumber !== order[i]) {
                 return cb('One find didnt work');
             }
-            executeAsap(function () {
-                runFrom(i + 1);
-            });
+            runFrom(i + 1); // rather recurse than having inconsistent delays with setImmediate 
         });
     }
 
@@ -161,9 +156,7 @@ export function findDocsWithIn(d, n, profiler, cb) {
             if (docs.length !== arraySize) {
                 return cb('One find didnt work');
             }
-            executeAsap(function () {
-                runFrom(i + 1);
-            });
+            runFrom(i + 1); // rather recurse than having inconsistent delays with setImmediate 
         });
     }
 
@@ -174,7 +167,7 @@ export function findDocsWithIn(d, n, profiler, cb) {
 /**
  * Find documents with findOne
  */
-export function findOneDocs(d, n, profiler, cb) {
+export function findOneDoc(d, n, profiler, cb) {
     const order = getRandomArray(n);
 
     profiler.step('FindingOne ' + n + ' documents');
@@ -190,15 +183,38 @@ export function findOneDocs(d, n, profiler, cb) {
             if (!doc || doc.docNumber !== order[i]) {
                 return cb('One find didnt work');
             }
-            executeAsap(function () {
-                runFrom(i + 1);
-            });
+            runFrom(i + 1);  // rather recurse than having inconsistent delays with setImmediate 
         });
     }
 
     runFrom(0);
 }
 
+/**
+ * Find documents with findOne
+ */
+export function findOneDocById(d, n, profiler, cb) {
+    const allIds = d.getAllData().map(doc => doc._id);
+
+    profiler.step('FindingOne ' + n + ' documents');
+
+    function runFrom(i) {
+        if (i === n) {   // Finished
+            console.log('===== RESULT (findOne) ===== ' + Math.floor(1000 * n / profiler.elapsedSinceLastStep()) + ' ops/s');
+            profiler.step('Finished finding ' + n + ' docs');
+            return cb();
+        }
+
+        d.findOne({_id: allIds[i]}, function (err, doc) {
+            if (!doc || doc._id !== allIds[i]) {
+                return cb('One find didnt work');
+            }
+            runFrom(i + 1); // rather recurse than having inconsistent delays with setImmediate 
+        });
+    }
+
+    runFrom(0);
+}
 
 /**
  * Update documents
@@ -224,9 +240,7 @@ export function updateDocs(options, d, n, profiler, cb) {
             if (nr !== 1) {
                 return cb('One update didnt work');
             }
-            executeAsap(function () {
-                runFrom(i + 1);
-            });
+            runFrom(i + 1); // rather recurse than having inconsistent delays with setImmediate 
         });
     }
 
@@ -263,9 +277,7 @@ export function removeDocs(options, d, n, profiler, cb) {
             }
             d.insert({docNumber: order[i]}, function (err) {   // We need to reinsert the doc so that we keep the collection's size at n
                 // So actually we're calculating the average time taken by one insert + one remove
-                executeAsap(function () {
-                    runFrom(i + 1);
-                });
+                runFrom(i + 1); // rather recurse than having inconsistent delays with setImmediate 
             });
         });
     }
@@ -288,9 +300,7 @@ export function loadDatabase(d, n, profiler, cb) {
         }
 
         d.loadDatabase(function (err) {
-            executeAsap(function () {
-                runFrom(i + 1);
-            });
+            runFrom(i + 1); // rather recurse than having inconsistent delays with setImmediate 
         });
     }
 

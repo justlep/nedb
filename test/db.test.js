@@ -360,11 +360,17 @@ describe('Database', function () {
       });
     });
 
-    it('Can insert a doc with id 0', function (done) {
+    it('Can NOT insert a doc with id 0, but with "0"', function (done) {
+      
       d.insert({ _id: 0, hello: 'world' }, function (err, doc) {
-         expect(doc._id).to.equal(0);
-         expect(doc.hello).to.equal('world');
-        done();
+         expect(err).to.be.instanceof(Error);
+         expect(err.message).to.equal('Invalid document or _id value');
+
+          d.insert({ _id: "0", hello: 'world' }, function (err, doc) {
+              expect(doc._id).to.equal('0');
+              expect(doc.hello).to.equal('world');
+              done();
+          });
       });
     });
 
@@ -1916,7 +1922,7 @@ describe('Database', function () {
              expect(d.indexes.z.fieldName).to.equal('z');
              expect(d.indexes.z.unique).to.equal(false);
              expect(d.indexes.z.sparse).to.equal(false);
-             expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(3);
+             expect(d.indexes.z._getNumberOfKeys()).to.equal(3);
              expect(d.indexes.z.tree.search('1')[0]).to.equal(d.getAllData()[0]);
              expect(d.indexes.z.tree.search('2')[0]).to.equal(d.getAllData()[1]);
              expect(d.indexes.z.tree.search('3')[0]).to.equal(d.getAllData()[2]);
@@ -1983,7 +1989,7 @@ describe('Database', function () {
                      expect(d.indexes.z.fieldName).to.equal('z');
                      expect(d.indexes.z.unique).to.equal(false);
                      expect(d.indexes.z.sparse).to.equal(false);
-                     expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(3);
+                     expect(d.indexes.z._getNumberOfKeys()).to.equal(3);
 
                     // The pointers in the _id and z indexes are the same
                      expect(d.indexes.z.tree.search('1')[0]).to.equal(d.indexes._id.getMatching('aaa')[0]);
@@ -2026,7 +2032,7 @@ describe('Database', function () {
          expect(d.indexes.z.fieldName).to.equal('z');
          expect(d.indexes.z.unique).to.equal(false);
          expect(d.indexes.z.sparse).to.equal(false);
-         expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(0);
+         expect(d.indexes.z._getNumberOfKeys()).to.equal(0);
 
         fs.writeFile(testDb, rawData, 'utf8', function () {
           d.loadDatabase(function () {
@@ -2037,7 +2043,7 @@ describe('Database', function () {
  
             expect(d.getAllData().length).to.equal(3);
  
-            expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(3);
+            expect(d.indexes.z._getNumberOfKeys()).to.equal(3);
              expect(d.indexes.z.tree.search('1')[0]).to.equal(doc1);
              expect(d.indexes.z.tree.search('2')[0]).to.equal(doc2);
              expect(d.indexes.z.tree.search('3')[0]).to.equal(doc3);
@@ -2057,8 +2063,8 @@ describe('Database', function () {
         expect(d.getAllData().length).to.equal(0);
         d.ensureIndex({ fieldName: 'z' }, function () {
           d.ensureIndex({ fieldName: 'a' }, function () {
-             expect(d.indexes.a.tree.getNumberOfKeys()).to.equal(0);
-             expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(0);
+             expect(d.indexes.a._getNumberOfKeys()).to.equal(0);
+             expect(d.indexes.z._getNumberOfKeys()).to.equal(0);
 
             fs.writeFile(testDb, rawData, 'utf8', function () {
               d.loadDatabase(function (err) {
@@ -2070,12 +2076,12 @@ describe('Database', function () {
                 assert.isNull(err);
                  expect(d.getAllData().length).to.equal(3);
  
-                expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(3);
+                expect(d.indexes.z._getNumberOfKeys()).to.equal(3);
                  expect(d.indexes.z.tree.search('1')[0]).to.equal(doc1);
                  expect(d.indexes.z.tree.search('2')[0]).to.equal(doc2);
                  expect(d.indexes.z.tree.search('3')[0]).to.equal(doc3);
  
-                expect(d.indexes.a.tree.getNumberOfKeys()).to.equal(3);
+                expect(d.indexes.a._getNumberOfKeys()).to.equal(3);
                  expect(d.indexes.a.tree.search(2)[0]).to.equal(doc1);
                  expect(d.indexes.a.tree.search('world')[0]).to.equal(doc2);
                  expect(d.indexes.a.tree.search({ today: now })[0]).to.equal(doc3);
@@ -2098,14 +2104,14 @@ describe('Database', function () {
         expect(d.getAllData().length).to.equal(0);
 
         d.ensureIndex({ fieldName: 'z', unique: true });
-         expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(0);
+         expect(d.indexes.z._getNumberOfKeys()).to.equal(0);
 
         fs.writeFile(testDb, rawData, 'utf8', function () {
           d.loadDatabase(function (err) {
              expect(err.errorType).to.equal('uniqueViolated');
              expect(err.key).to.equal("1");
              expect(d.getAllData().length).to.equal(0);
-             expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(0);
+             expect(d.indexes.z._getNumberOfKeys()).to.equal(0);
 
             done();
           });
@@ -2155,14 +2161,14 @@ describe('Database', function () {
 
       it('Newly inserted documents are indexed', function (done) {
         d.ensureIndex({ fieldName: 'z' });
-         expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(0);
+         expect(d.indexes.z._getNumberOfKeys()).to.equal(0);
 
         d.insert({ a: 2, z: 'yes' }, function (err, newDoc) {
-           expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(1);
+           expect(d.indexes.z._getNumberOfKeys()).to.equal(1);
           assert.deepEqual(d.indexes.z.getMatching('yes'), [newDoc]);
 
           d.insert({ a: 5, z: 'nope' }, function (err, newDoc) {
-             expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(2);
+             expect(d.indexes.z._getNumberOfKeys()).to.equal(2);
             assert.deepEqual(d.indexes.z.getMatching('nope'), [newDoc]);
 
             done();
@@ -2173,17 +2179,17 @@ describe('Database', function () {
       it('If multiple indexes are defined, the document is inserted in all of them', function (done) {
         d.ensureIndex({ fieldName: 'z' });
         d.ensureIndex({ fieldName: 'ya' });
-         expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(0);
+         expect(d.indexes.z._getNumberOfKeys()).to.equal(0);
 
         d.insert({ a: 2, z: 'yes', ya: 'indeed' }, function (err, newDoc) {
-           expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(1);
-           expect(d.indexes.ya.tree.getNumberOfKeys()).to.equal(1);
+           expect(d.indexes.z._getNumberOfKeys()).to.equal(1);
+           expect(d.indexes.ya._getNumberOfKeys()).to.equal(1);
           assert.deepEqual(d.indexes.z.getMatching('yes'), [newDoc]);
           assert.deepEqual(d.indexes.ya.getMatching('indeed'), [newDoc]);
 
           d.insert({ a: 5, z: 'nope', ya: 'sure' }, function (err, newDoc2) {
-             expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(2);
-             expect(d.indexes.ya.tree.getNumberOfKeys()).to.equal(2);
+             expect(d.indexes.z._getNumberOfKeys()).to.equal(2);
+             expect(d.indexes.ya._getNumberOfKeys()).to.equal(2);
             assert.deepEqual(d.indexes.z.getMatching('nope'), [newDoc2]);
             assert.deepEqual(d.indexes.ya.getMatching('sure'), [newDoc2]);
 
@@ -2194,14 +2200,14 @@ describe('Database', function () {
 
       it('Can insert two docs at the same key for a non unique index', function (done) {
         d.ensureIndex({ fieldName: 'z' });
-         expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(0);
+         expect(d.indexes.z._getNumberOfKeys()).to.equal(0);
 
         d.insert({ a: 2, z: 'yes' }, function (err, newDoc) {
-           expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(1);
+           expect(d.indexes.z._getNumberOfKeys()).to.equal(1);
           assert.deepEqual(d.indexes.z.getMatching('yes'), [newDoc]);
 
           d.insert({ a: 5, z: 'yes' }, function (err, newDoc2) {
-             expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(1);
+             expect(d.indexes.z._getNumberOfKeys()).to.equal(1);
             assert.deepEqual(d.indexes.z.getMatching('yes'), [newDoc, newDoc2]);
 
             done();
@@ -2211,10 +2217,10 @@ describe('Database', function () {
 
       it('If the index has a unique constraint, an error is thrown if it is violated and the data is not modified', function (done) {
         d.ensureIndex({ fieldName: 'z', unique: true });
-         expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(0);
+         expect(d.indexes.z._getNumberOfKeys()).to.equal(0);
 
         d.insert({ a: 2, z: 'yes' }, function (err, newDoc) {
-           expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(1);
+           expect(d.indexes.z._getNumberOfKeys()).to.equal(1);
           assert.deepEqual(d.indexes.z.getMatching('yes'), [newDoc]);
 
           d.insert({ a: 5, z: 'yes' }, function (err) {
@@ -2222,7 +2228,7 @@ describe('Database', function () {
              expect(err.key).to.equal('yes');
 
             // Index didn't change
-             expect(d.indexes.z.tree.getNumberOfKeys()).to.equal(1);
+             expect(d.indexes.z._getNumberOfKeys()).to.equal(1);
             assert.deepEqual(d.indexes.z.getMatching('yes'), [newDoc]);
 
             // Data didn't change
@@ -2244,17 +2250,17 @@ describe('Database', function () {
 
         d.insert({ nonu1: 'yes', nonu2: 'yes2', uni: 'willfail' }, function (err, newDoc) {
           assert.isNull(err);
-           expect(d.indexes.nonu1.tree.getNumberOfKeys()).to.equal(1);
-           expect(d.indexes.uni.tree.getNumberOfKeys()).to.equal(1);
-           expect(d.indexes.nonu2.tree.getNumberOfKeys()).to.equal(1);
+           expect(d.indexes.nonu1._getNumberOfKeys()).to.equal(1);
+           expect(d.indexes.uni._getNumberOfKeys()).to.equal(1);
+           expect(d.indexes.nonu2._getNumberOfKeys()).to.equal(1);
 
           d.insert({ nonu1: 'no', nonu2: 'no2', uni: 'willfail' }, function (err) {
              expect(err.errorType).to.equal('uniqueViolated');
 
             // No index was modified
-             expect(d.indexes.nonu1.tree.getNumberOfKeys()).to.equal(1);
-             expect(d.indexes.uni.tree.getNumberOfKeys()).to.equal(1);
-             expect(d.indexes.nonu2.tree.getNumberOfKeys()).to.equal(1);
+             expect(d.indexes.nonu1._getNumberOfKeys()).to.equal(1);
+             expect(d.indexes.uni._getNumberOfKeys()).to.equal(1);
+             expect(d.indexes.nonu2._getNumberOfKeys()).to.equal(1);
 
             assert.deepEqual(d.indexes.nonu1.getMatching('yes'), [newDoc]);
             assert.deepEqual(d.indexes.uni.getMatching('willfail'), [newDoc]);
@@ -2267,10 +2273,10 @@ describe('Database', function () {
 
       it('Unique indexes prevent you from inserting two docs where the field is undefined except if theyre sparse', function (done) {
         d.ensureIndex({ fieldName: 'zzz', unique: true });
-         expect(d.indexes.zzz.tree.getNumberOfKeys()).to.equal(0);
+         expect(d.indexes.zzz._getNumberOfKeys()).to.equal(0);
 
         d.insert({ a: 2, z: 'yes' }, function (err, newDoc) {
-           expect(d.indexes.zzz.tree.getNumberOfKeys()).to.equal(1);
+           expect(d.indexes.zzz._getNumberOfKeys()).to.equal(1);
           assert.deepEqual(d.indexes.zzz.getMatching(undefined), [newDoc]);
 
           d.insert({ a: 5, z: 'other' }, function (err) {
@@ -2405,18 +2411,18 @@ describe('Database', function () {
               assert.isNull(err);
                expect(nr).to.equal(1);
  
-              expect(d.indexes.a.tree.getNumberOfKeys()).to.equal(2);
+              expect(d.indexes.a._getNumberOfKeys()).to.equal(2);
                expect(d.indexes.a.getMatching(456)[0]._id).to.equal(doc1._id);
                expect(d.indexes.a.getMatching(2)[0]._id).to.equal(doc2._id);
  
-              expect(d.indexes.b.tree.getNumberOfKeys()).to.equal(2);
+              expect(d.indexes.b._getNumberOfKeys()).to.equal(2);
                expect(d.indexes.b.getMatching('no')[0]._id).to.equal(doc1._id);
                expect(d.indexes.b.getMatching('si')[0]._id).to.equal(doc2._id);
 
               // The same pointers are shared between all indexes
-               expect(d.indexes.a.tree.getNumberOfKeys()).to.equal(2);
-               expect(d.indexes.b.tree.getNumberOfKeys()).to.equal(2);
-               expect(d.indexes._id.tree.getNumberOfKeys()).to.equal(2);
+               expect(d.indexes.a._getNumberOfKeys()).to.equal(2);
+               expect(d.indexes.b._getNumberOfKeys()).to.equal(2);
+               expect(d.indexes._id._getNumberOfKeys()).to.equal(2);
                expect(d.indexes.a.getMatching(456)[0]).to.equal(d.indexes._id.getMatching(doc1._id)[0]);
                expect(d.indexes.b.getMatching('no')[0]).to.equal(d.indexes._id.getMatching(doc1._id)[0]);
                expect(d.indexes.a.getMatching(2)[0]).to.equal(d.indexes._id.getMatching(doc2._id)[0]);
@@ -2427,20 +2433,20 @@ describe('Database', function () {
                 assert.isNull(err);
                  expect(nr).to.equal(2);
  
-                expect(d.indexes.a.tree.getNumberOfKeys()).to.equal(2);
+                expect(d.indexes.a._getNumberOfKeys()).to.equal(2);
                  expect(d.indexes.a.getMatching(466)[0]._id).to.equal(doc1._id);
                  expect(d.indexes.a.getMatching(12)[0]._id).to.equal(doc2._id);
  
-                expect(d.indexes.b.tree.getNumberOfKeys()).to.equal(1);
+                expect(d.indexes.b._getNumberOfKeys()).to.equal(1);
                  expect(d.indexes.b.getMatching('same').length).to.equal(2);
                 expect(d.indexes.b.getMatching('same').map(o => o._id)).to.contain(doc1._id);
                 expect(d.indexes.b.getMatching('same').map(o => o._id)).to.contain(doc2._id);
 
                 // The same pointers are shared between all indexes
-                 expect(d.indexes.a.tree.getNumberOfKeys()).to.equal(2);
-                 expect(d.indexes.b.tree.getNumberOfKeys()).to.equal(1);
+                 expect(d.indexes.a._getNumberOfKeys()).to.equal(2);
+                 expect(d.indexes.b._getNumberOfKeys()).to.equal(1);
                  expect(d.indexes.b.getAll().length).to.equal(2);
-                 expect(d.indexes._id.tree.getNumberOfKeys()).to.equal(2);
+                 expect(d.indexes._id._getNumberOfKeys()).to.equal(2);
                  expect(d.indexes.a.getMatching(466)[0]).to.equal(d.indexes._id.getMatching(doc1._id)[0]);
                  expect(d.indexes.a.getMatching(12)[0]).to.equal(d.indexes._id.getMatching(doc2._id)[0]);
                 // Can't test the pointers in b as their order is randomized, but it is the same as with a
@@ -2477,17 +2483,17 @@ describe('Database', function () {
                 assert.deepEqual(doc3, { a: 3, b: 30, c: 300, _id: _doc3._id });
 
                 // All indexes left unchanged and pointing to the same docs
-                 expect(d.indexes.a.tree.getNumberOfKeys()).to.equal(3);
+                 expect(d.indexes.a._getNumberOfKeys()).to.equal(3);
                  expect(d.indexes.a.getMatching(1)[0]).to.equal(doc1);
                  expect(d.indexes.a.getMatching(2)[0]).to.equal(doc2);
                  expect(d.indexes.a.getMatching(3)[0]).to.equal(doc3);
  
-                expect(d.indexes.b.tree.getNumberOfKeys()).to.equal(3);
+                expect(d.indexes.b._getNumberOfKeys()).to.equal(3);
                  expect(d.indexes.b.getMatching(10)[0]).to.equal(doc1);
                  expect(d.indexes.b.getMatching(20)[0]).to.equal(doc2);
                  expect(d.indexes.b.getMatching(30)[0]).to.equal(doc3);
  
-                expect(d.indexes.c.tree.getNumberOfKeys()).to.equal(3);
+                expect(d.indexes.c._getNumberOfKeys()).to.equal(3);
                  expect(d.indexes.c.getMatching(100)[0]).to.equal(doc1);
                  expect(d.indexes.c.getMatching(200)[0]).to.equal(doc2);
                  expect(d.indexes.c.getMatching(300)[0]).to.equal(doc3);
@@ -2524,17 +2530,17 @@ describe('Database', function () {
                 assert.deepEqual(doc3, { a: 3, b: 30, c: 300, _id: _doc3._id });
 
                 // All indexes left unchanged and pointing to the same docs
-                 expect(d.indexes.a.tree.getNumberOfKeys()).to.equal(3);
+                 expect(d.indexes.a._getNumberOfKeys()).to.equal(3);
                  expect(d.indexes.a.getMatching(1)[0]).to.equal(doc1);
                  expect(d.indexes.a.getMatching(2)[0]).to.equal(doc2);
                  expect(d.indexes.a.getMatching(3)[0]).to.equal(doc3);
  
-                expect(d.indexes.b.tree.getNumberOfKeys()).to.equal(3);
+                expect(d.indexes.b._getNumberOfKeys()).to.equal(3);
                  expect(d.indexes.b.getMatching(10)[0]).to.equal(doc1);
                  expect(d.indexes.b.getMatching(20)[0]).to.equal(doc2);
                  expect(d.indexes.b.getMatching(30)[0]).to.equal(doc3);
  
-                expect(d.indexes.c.tree.getNumberOfKeys()).to.equal(3);
+                expect(d.indexes.c._getNumberOfKeys()).to.equal(3);
                  expect(d.indexes.c.getMatching(100)[0]).to.equal(doc1);
                  expect(d.indexes.c.getMatching(200)[0]).to.equal(doc2);
                  expect(d.indexes.c.getMatching(300)[0]).to.equal(doc3);
@@ -2597,18 +2603,18 @@ describe('Database', function () {
                 assert.isNull(err);
                  expect(nr).to.equal(1);
  
-                expect(d.indexes.a.tree.getNumberOfKeys()).to.equal(2);
+                expect(d.indexes.a._getNumberOfKeys()).to.equal(2);
                  expect(d.indexes.a.getMatching(2)[0]._id).to.equal(doc2._id);
                  expect(d.indexes.a.getMatching(3)[0]._id).to.equal(doc3._id);
  
-                expect(d.indexes.b.tree.getNumberOfKeys()).to.equal(2);
+                expect(d.indexes.b._getNumberOfKeys()).to.equal(2);
                  expect(d.indexes.b.getMatching('si')[0]._id).to.equal(doc2._id);
                  expect(d.indexes.b.getMatching('coin')[0]._id).to.equal(doc3._id);
 
                 // The same pointers are shared between all indexes
-                 expect(d.indexes.a.tree.getNumberOfKeys()).to.equal(2);
-                 expect(d.indexes.b.tree.getNumberOfKeys()).to.equal(2);
-                 expect(d.indexes._id.tree.getNumberOfKeys()).to.equal(2);
+                 expect(d.indexes.a._getNumberOfKeys()).to.equal(2);
+                 expect(d.indexes.b._getNumberOfKeys()).to.equal(2);
+                 expect(d.indexes._id._getNumberOfKeys()).to.equal(2);
                  expect(d.indexes.a.getMatching(2)[0]).to.equal(d.indexes._id.getMatching(doc2._id)[0]);
                  expect(d.indexes.b.getMatching('si')[0]).to.equal(d.indexes._id.getMatching(doc2._id)[0]);
                  expect(d.indexes.a.getMatching(3)[0]).to.equal(d.indexes._id.getMatching(doc3._id)[0]);
@@ -2619,9 +2625,9 @@ describe('Database', function () {
                   assert.isNull(err);
                    expect(nr).to.equal(2);
  
-                  expect(d.indexes.a.tree.getNumberOfKeys()).to.equal(0);
-                   expect(d.indexes.b.tree.getNumberOfKeys()).to.equal(0);
-                   expect(d.indexes._id.tree.getNumberOfKeys()).to.equal(0);
+                  expect(d.indexes.a._getNumberOfKeys()).to.equal(0);
+                   expect(d.indexes.b._getNumberOfKeys()).to.equal(0);
+                   expect(d.indexes._id._getNumberOfKeys()).to.equal(0);
 
                   done();
                 });

@@ -32,8 +32,11 @@ async.waterfall([
     
     // Test with multiple documents
     function (cb) {
-        d.remove({}, {multi: true}, function () {
-            return cb();
+        d.remove({}, {multi: true}, function(err, totalDeleted) {
+            if (err || totalDeleted !== n) {
+                cb(err || new Error(`Deleted only ${totalDeleted} docs`));
+            }
+            cb();
         });
     },
     async.apply(commonUtilities.insertDocs, d, n, profiler),

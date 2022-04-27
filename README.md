@@ -11,8 +11,8 @@ the **embedded persistent or in-memory database for Node.js**.
 
 * provided as ES module
 * Node.js 14.17.6 and above
-* minimal dependencies ([async](https://www.npmjs.com/package/async) + [binary-search-tree](https://www.npmjs.com/package/@justlep/binary-search-tree))
-* 100% JavaScript, no binary dependency.
+* only one dependency ([binary-search-tree](https://www.npmjs.com/package/@justlep/binary-search-tree))
+* 100% JavaScript, no binary dependencies
  
 API is a subset of MongoDB's and it's <a href="#speed">plenty fast</a>.
 
@@ -660,13 +660,17 @@ NeDB is not intended to be a replacement of large-scale databases such as MongoD
 That said, it is still pretty fast on the expected datasets, especially if you use indexing. 
 
 Measurements for a collection of 10,000 documents, indexing and persistence enabled (Intel i7 6700 @ 3.4 Ghz):  
-* Insert: **6,053 ops/s**
-* Find: **71,428 ops/s**
-* FindOne: **57,471 ops/s**
-* Update: **6,289 ops/s**
-* Remove: **8,500 ops/s**  
+* Insert: ~**6,500 ops/s**
+* Find: ~**70,000 ops/s**
+* FindOne: ~**59,000 ops/s** 
+* FindOne(_id): ~**63,000 ops/s** 
+* Update: ~**7,000 ops/s** 
+* Remove: ~**7,000 ops/s** 
 
-You can run these simple benchmarks by executing the scripts in the `benchmarks` folder. Run them with the `--help` flag to see how they work.
+Insert/Update/Remove performance depends massively on disk speed. 
+You can run these simple benchmarks by executing the scripts in the `benchmarks/` folder. 
+Run them with the `--help` flag to see how they work.
+Numbers above were obtained by command like `node find.js -i`.
 
 ### Memory footprint
 A copy of the whole database is kept in memory. This is not much on the
