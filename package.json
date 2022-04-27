@@ -1,6 +1,6 @@
 {
   "name": "@justlep/nedb",
-  "version": "2.0.4-beta",
+  "version": "2.0.4",
   "type": "module",
   "engines": {
     "node": ">=14.17.6"
