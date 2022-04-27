@@ -10,3 +10,4 @@ workspace
 benchmarks
 *.tgz
 logo.png
+*.log
