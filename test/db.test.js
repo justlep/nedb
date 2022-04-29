@@ -469,6 +469,29 @@ describe('Database', function () {
       });
     });
 
+    it('Can use an index to get docs with a {_id: $in} match', function (done) {
+      d.insert([{num:1}, {num:2}, {num:3}], function (err) {
+          d.find({}, (err, docs) => {
+              expect(docs.length).to.equal(3);
+              const [doc1, doc2, doc3] = docs.sort((a,b) => a.num - b.num);
+              
+              assert.equal(doc1.num, 1);
+              assert.equal(doc2.num, 2);
+              assert.equal(doc3.num, 3);
+              
+              d.find({_id: {$in: [doc1._id, doc3._id, doc2._id]}}, (err, newDocs) => {
+                  expect(newDocs.length).to.equal(3);
+                  const [doc1, doc2, doc3] = newDocs.sort((a,b) => a.num - b.num);
+
+                  assert.equal(doc1.num, 1);
+                  assert.equal(doc2.num, 2);
+                  assert.equal(doc3.num, 3);
+                  done();
+              });
+          });
+      });
+    });
+    
     it('If no index can be used, return the whole database', function (done) {
       d.ensureIndex({ fieldName: 'tf' }, function (err) {
         d.insert({ tf: 4 }, function (err, _doc1) {
