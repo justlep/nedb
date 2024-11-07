@@ -1238,7 +1238,16 @@ describe('Model', function () {
         matchQuery({ a: 5 }, { a: { $exists: false } }).should.equal(false);
         matchQuery({ a: 5 }, { a: { $exists: null } }).should.equal(false);
         matchQuery({ a: 5 }, { a: { $exists: undefined } }).should.equal(false);
-
+        
+        matchQuery({ a: [5, 6] }, { a: { $exists: true } }).should.equal(true);
+        matchQuery({ a: [5] }, { a: { $exists: true } }).should.equal(true);
+        matchQuery({ a: [5] }, { b: { $exists: false } }).should.equal(true);
+        matchQuery({ a: [0] }, { a: { $exists: true } }).should.equal(true);
+        matchQuery({ a: [null] }, { a: { $exists: true } }).should.equal(true);
+        matchQuery({ a: [undefined] }, { a: { $exists: true } }).should.equal(true);
+        matchQuery({ a: [] }, { a: { $exists: true } }).should.equal(true);
+        matchQuery({ a: [1] }, { a: { $exists: true } }).should.equal(true);
+        
         matchQuery({ a: 5 }, { b: { $exists: true } }).should.equal(false);
 
         matchQuery({ a: 5 }, { b: { $exists: false } }).should.equal(true);

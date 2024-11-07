@@ -2,7 +2,6 @@
 
 ## The JavaScript Database
 
-[![Build Status](https://api.travis-ci.com/justlep/nedb.svg?branch=master)](https://app.travis-ci.com/github/justlep/nedb)
 [![NPM Version](https://img.shields.io/npm/v/@justlep/nedb.svg)](https://www.npmjs.com/package/@justlep/nedb)
 [![Node.js Version](https://img.shields.io/node/v/@justlep/nedb.svg)]()
 
