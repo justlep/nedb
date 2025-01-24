@@ -29,7 +29,7 @@
     "commander": "^9.2.0",
     "eslint": "^8.13.0",
     "eslint-plugin-log-filenames": "^1.0.6",
-    "exec-time": "0.0.2",
+    "exec-time": "^0.0.4",
     "mocha": "^9.2.2"
   },
   "scripts": {

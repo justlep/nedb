@@ -55,9 +55,6 @@
         // "no-param-reassign": 2,
         //"indent": [2, 4]
     },
-    "globals": {
-        "QRCode": false
-    },
     "plugins": [
         "log-filenames"
     ]
